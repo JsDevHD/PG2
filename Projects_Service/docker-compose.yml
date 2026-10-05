@@ -1,0 +1,22 @@
+services:
+  service:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      # Dentro de la red de compose Mongo se alcanza por el nombre del servicio, no por localhost.
+      MONGODB_URI: mongodb://mongo:27017
+      # En local, Azurite emula Blob Storage (cuenta de desarrollo pública de Microsoft).
+      # Quitar esta línea para usar la cuenta de Azure definida en `.env`.
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+    depends_on: [mongo, azurite]
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes: [mongo_data:/data/db]
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+    ports: ["10000:10000"]
+volumes:
+  mongo_data:

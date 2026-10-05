@@ -1,0 +1,15 @@
+services:
+  service:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      # Dentro de la red de compose Mongo se alcanza por el nombre del servicio, no por localhost.
+      MONGODB_URI: mongodb://mongo:27017
+    depends_on: [mongo]
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes: [mongo_data:/data/db]
+volumes:
+  mongo_data:

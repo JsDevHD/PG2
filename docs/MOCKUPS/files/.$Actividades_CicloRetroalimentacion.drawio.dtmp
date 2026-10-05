@@ -1,0 +1,88 @@
+<mxfile host="Electron" agent="Claude">
+  <diagram id="actividades-ciclo-retro" name="Ciclo de Retroalimentacion">
+    <mxGraphModel dx="1406" dy="936" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="950" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="laneEst" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=14;fillColor=#dae8fc;strokeColor=#999999;opacity=40;" value="Estudiante" vertex="1">
+          <mxGeometry height="900" width="340" x="20" as="geometry" />
+        </mxCell>
+        <mxCell id="laneDoc" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontStyle=1;fontSize=14;fillColor=#e1d5e7;strokeColor=#999999;opacity=40;" value="Docente" vertex="1">
+          <mxGeometry height="900" width="460" x="360" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="175" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subir" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=18;" value="Subir versión (boceto o avance)" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="consultarFb" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=18;" value="Consultar retroalimentación" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="ajustar" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=18;" value="Ajustar y subir nueva versión" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="exportar" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=18;" value="Exportar portafolio" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="175" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="end_dot" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="16" width="16" x="182" y="867" as="geometry" />
+        </mxCell>
+        <mxCell id="revisar" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=18;" value="Revisar versión" vertex="1">
+          <mxGeometry height="60" width="200" x="490" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="decision" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" value="¿Requiere ajustes?" vertex="1">
+          <mxGeometry height="90" width="140" x="520" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=18;" value="Dejar retroalimentación y calificación parcial" vertex="1">
+          <mxGeometry height="70" width="200" x="410" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="calificar" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=18;" value="Asignar calificación final" vertex="1">
+          <mxGeometry height="70" width="140" x="670" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="subir">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" source="subir" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#666666;fontColor=#333333;" target="revisar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" source="revisar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" source="decision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.3;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="feedback" value="Sí">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" source="decision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.7;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="calificar" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" source="feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#666666;fontColor=#333333;" target="consultarFb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f7" edge="1" parent="1" source="consultarFb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="ajustar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" edge="1" parent="1" source="ajustar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=1;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#666666;fontColor=#333333;" target="revisar" value="nueva iteración">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="680" />
+              <mxPoint x="900" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f9" edge="1" parent="1" source="calificar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#666666;fontColor=#333333;" target="exportar">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="f10" edge="1" parent="1" source="exportar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#666666;fontColor=#333333;" target="end">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="830" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

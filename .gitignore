@@ -1,0 +1,5 @@
+.venv/
+.env
+__pycache__/
+.codebase-index-cache.pkl
+.claude/settings.local.json

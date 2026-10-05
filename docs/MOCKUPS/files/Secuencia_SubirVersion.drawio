@@ -1,0 +1,96 @@
+<mxfile host="app.diagrams.net" agent="Claude" version="24.0.0" type="device">
+  <diagram id="seq-subir-version" name="Secuencia - Subir version">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+    <mxCell id="est" value="Estudiante" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=12;size=40;" vertex="1" parent="1">
+      <mxGeometry x="40" y="20" width="140" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="fe" value="Frontend" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;size=40;" vertex="1" parent="1">
+      <mxGeometry x="260" y="20" width="140" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="ps" value="Projects Service" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;size=40;" vertex="1" parent="1">
+      <mxGeometry x="480" y="20" width="140" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="blob" value="Azure Blob Storage" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=12;size=40;" vertex="1" parent="1">
+      <mxGeometry x="720" y="20" width="140" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="db" value="MongoDB" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=12;size=40;" vertex="1" parent="1">
+      <mxGeometry x="960" y="20" width="140" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="act0" value="" style="html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="324" y="100" width="12" height="440" as="geometry" />
+    </mxCell>
+    <mxCell id="act1" value="" style="html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="544" y="160" width="12" height="320" as="geometry" />
+    </mxCell>
+    <mxCell id="act2" value="" style="html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="784" y="260" width="12" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="act3" value="" style="html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="1024" y="370" width="12" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="msg0" value="Adjunta archivo + descripción, clic &quot;Subir versión&quot;" style="html=1;verticalAlign=bottom;endArrow=block;endFill=1;curved=0;rounded=0;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="110" y="100" as="sourcePoint" />
+        <mxPoint x="330" y="100" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg1" value="POST /projects/{id}/versions  (Bearer JWT, multipart)" style="html=1;verticalAlign=bottom;endArrow=block;endFill=1;curved=0;rounded=0;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="330" y="160" as="sourcePoint" />
+        <mxPoint x="550" y="160" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg2" value="valida JWT y rol &quot;estudiante&quot;" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=10;fontColor=#333333;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="556" y="200" as="sourcePoint" />
+        <mxPoint x="556" y="224" as="targetPoint" />
+        <Array as="points"><mxPoint x="596" y="200" /><mxPoint x="596" y="224" /></Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg3" value="sube archivo binario" style="html=1;verticalAlign=bottom;endArrow=block;endFill=1;curved=0;rounded=0;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="550" y="260" as="sourcePoint" />
+        <mxPoint x="790" y="260" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg4" value="URL del archivo almacenado" style="html=1;verticalAlign=bottom;endArrow=open;endFill=1;curved=0;rounded=0;dashed=1;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="790" y="310" as="sourcePoint" />
+        <mxPoint x="550" y="310" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg5" value="insert en &quot;versions&quot; {project_id, student_id, file_url, description}" style="html=1;verticalAlign=bottom;endArrow=block;endFill=1;curved=0;rounded=0;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="550" y="370" as="sourcePoint" />
+        <mxPoint x="1030" y="370" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg6" value="confirmación (_id creado)" style="html=1;verticalAlign=bottom;endArrow=open;endFill=1;curved=0;rounded=0;dashed=1;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="1030" y="420" as="sourcePoint" />
+        <mxPoint x="550" y="420" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg7" value="201 Created (nueva versión)" style="html=1;verticalAlign=bottom;endArrow=open;endFill=1;curved=0;rounded=0;dashed=1;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="550" y="480" as="sourcePoint" />
+        <mxPoint x="330" y="480" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="msg8" value="Muestra confirmación y actualiza historial" style="html=1;verticalAlign=bottom;endArrow=open;endFill=1;curved=0;rounded=0;dashed=1;fontSize=10;fontColor=#333333;align=center;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="330" y="540" as="sourcePoint" />
+        <mxPoint x="110" y="540" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="title" value="sd Subir versión" style="text;html=1;fontStyle=1;fontSize=15;align=left;" vertex="1" parent="1">
+      <mxGeometry x="20" y="-30" width="500" height="30" as="geometry" />
+    </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
