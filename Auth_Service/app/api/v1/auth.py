@@ -48,12 +48,15 @@ async def register(
     """RF-10: crea una cuenta nueva. El rol queda fijo desde la creación."""
     # bcrypt es costoso en CPU; se ejecuta fuera del event loop para no bloquear otras peticiones.
     password_hash = await asyncio.to_thread(hash_password, body.password)
+    now = datetime.now(UTC)
     document = {
         "name": body.name,
         "email": body.email,
         "password_hash": password_hash,
         "role": body.role.value,
-        "created_at": datetime.now(UTC),
+        "created_at": now,
+        # Prueba de la autorización (Decreto 1377 de 2013, art. 8): qué versión y cuándo.
+        "legal_consent": {"version": body.legal_version, "accepted_at": now},
     }
     try:
         result = await db.users.insert_one(document)

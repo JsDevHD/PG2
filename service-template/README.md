@@ -10,7 +10,7 @@ sus modelos, schemas, endpoints de negocio y variables de entorno propias.
 ## Requisitos
 
 - Docker + Docker Compose (para levantar el servicio con MongoDB), o
-- Python 3.12 y un MongoDB accesible (para desarrollo sin contenedores).
+- Python 3.13 y un MongoDB accesible (para desarrollo sin contenedores).
 
 ## Levantar el servicio localmente
 

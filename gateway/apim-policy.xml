@@ -1,0 +1,93 @@
+<policies>
+    <!--
+      Política de la API "graficos" en Azure API Management: es la versión en Azure de
+      gateway/nginx.conf (misma tabla de rutas). La API tiene sufijo "api/v1" y cinco operaciones
+      comodín (GET, POST, PATCH, DELETE y OPTIONS sobre "/*"); esta política decide a qué servicio va cada ruta.
+
+      Los {{...}} son "named values" de APIM (ver docs/DESPLIEGUE_AZURE.md, paso 9):
+        frontend-origin  https://<fqdn-del-frontend>
+        auth-url         https://<fqdn-de-auth-service>/api/v1      (y lo mismo para
+        projects-url, feedback-url, export-url)
+      APIM quita el sufijo "api/v1" antes de reenviar, por eso cada URL lo vuelve a incluir.
+    -->
+    <inbound>
+        <!-- CORS solo aquí: los servicios corren con CORS_ALLOWED_ORIGINS=[] (si no, la cabecera
+             Access-Control-Allow-Origin sale duplicada y el navegador rechaza la respuesta). -->
+        <cors allow-credentials="false">
+            <allowed-origins>
+                <origin>{{frontend-origin}}</origin>
+            </allowed-origins>
+            <allowed-methods preflight-result-max-age="600">
+                <method>GET</method>
+                <method>POST</method>
+                <method>PATCH</method>
+                <method>DELETE</method>
+            </allowed-methods>
+            <allowed-headers>
+                <header>Authorization</header>
+                <header>Content-Type</header>
+            </allowed-headers>
+            <!-- El frontend lee Content-Disposition para el nombre del PDF exportado. -->
+            <expose-headers>
+                <header>Content-Disposition</header>
+            </expose-headers>
+        </cors>
+        <base />
+        <set-variable name="path" value="@(context.Request.OriginalUrl.Path)" />
+        <choose>
+            <!-- Auth Service -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/(auth|users)/"))">
+                <set-backend-service base-url="{{auth-url}}" />
+            </when>
+            <!-- Projects Service: cursos (crear, listar, unirse, proyectos, progreso) y versiones -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/courses(/|$)"))">
+                <set-backend-service base-url="{{projects-url}}" />
+            </when>
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/projects/[^/]+/versions(/|$)"))">
+                <set-backend-service base-url="{{projects-url}}" />
+            </when>
+            <!-- Projects Service: editar (PATCH) o eliminar (DELETE) un proyecto -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/projects/[^/]+$"))">
+                <set-backend-service base-url="{{projects-url}}" />
+            </when>
+            <!-- Projects Service: grupos y plazo para formarlos -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/projects/[^/]+/(groups(/.*)?|group-deadline)$"))">
+                <set-backend-service base-url="{{projects-url}}" />
+            </when>
+            <!-- Feedback Service -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/versions/[^/]+/feedback$"))">
+                <set-backend-service base-url="{{feedback-url}}" />
+            </when>
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/projects/[^/]+/(feedback|final-grade)$"))">
+                <set-backend-service base-url="{{feedback-url}}" />
+            </when>
+            <!-- Export Service -->
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/projects/[^/]+/export$"))">
+                <set-backend-service base-url="{{export-url}}" />
+            </when>
+            <when condition="@(Regex.IsMatch((string)context.Variables["path"], "^/?api/v1/portfolio/"))">
+                <set-backend-service base-url="{{export-url}}" />
+            </when>
+            <!-- Cualquier otra ruta no existe en el contrato: mismo error que el gateway local. -->
+            <otherwise>
+                <return-response>
+                    <set-status code="404" reason="Not Found" />
+                    <set-header name="Content-Type" exists-action="override">
+                        <value>application/json</value>
+                    </set-header>
+                    <set-body>{"detail": "Ruta no encontrada en el API Gateway"}</set-body>
+                </return-response>
+            </otherwise>
+        </choose>
+    </inbound>
+    <backend>
+        <!-- La exportación de PDF descarga las imágenes de Blob y puede tardar. -->
+        <forward-request timeout="120" />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

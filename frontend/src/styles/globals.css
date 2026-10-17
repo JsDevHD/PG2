@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens de diseño (sección 5.1 de la especificación), como canales RGB para que Tailwind
+   pueda aplicar opacidad (bg-ink/10). Reutilizan la paleta de los diagramas del
+   proyecto: azul = estudiante, morado = docente, verde = lo compartido entre roles. */
+:root {
+  --color-ink: 31 41 55; /* #1f2937 */
+  --color-primary: 31 41 55; /* #1f2937 */
+  --color-student: 108 142 191; /* #6c8ebf */
+  --color-student-soft: 218 232 252; /* #dae8fc */
+  --color-teacher: 150 115 166; /* #9673a6 */
+  --color-teacher-soft: 225 213 231; /* #e1d5e7 */
+  --color-shared: 130 179 102; /* #82b366 */
+  --color-shared-soft: 213 232 212; /* #d5e8d4 */
+  --color-warning: 215 155 0; /* #d79b00 */
+  --color-warning-soft: 255 230 204; /* #ffe6cc */
+  --color-danger: 184 84 80; /* #b85450 */
+  --color-danger-soft: 248 206 204; /* #f8cecc */
+  /* Texto sobre los fondos suaves: versiones oscuras de cada tono para contraste WCAG AA. */
+  --color-student-ink: 47 84 130; /* #2f5482 */
+  --color-teacher-ink: 92 61 110; /* #5c3d6e */
+  --color-shared-ink: 61 107 41; /* #3d6b29 */
+  --color-warning-ink: 122 88 0; /* #7a5800 */
+  --color-danger-ink: 138 51 48; /* #8a3330 */
+  --color-bg: 244 244 245; /* #f4f4f5 */
+  --color-surface: 255 255 255; /* #ffffff */
+  --color-border: 209 213 219; /* #d1d5db */
+  --color-text-muted: 107 114 128; /* #6b7280 */
+  /* Franja del encabezado y del pie: oscura en ambos temas. */
+  --color-chrome: 31 41 55; /* #1f2937 */
+  /* Fondo de las vistas previas de las obras: claro también en modo oscuro, para que una pieza
+     con transparencia o trazos oscuros se vea como la diseñó el estudiante. */
+  --color-canvas: 244 244 245; /* #f4f4f5 */
+  --color-canvas-ink: 107 114 128; /* #6b7280: texto sobre el lienzo */
+  /* Intensidad de las líneas de la plancha de corte (marcadas y finas). */
+  --mat-strong: 0.13;
+  --mat-faint: 0.06;
+  color-scheme: light;
+}
+
+/* Modo oscuro: la clase .dark la pone public/theme.js antes de pintar (preferencia guardada o la
+   del sistema) y lib/theme.ts al cambiarla. Cada par texto/fondo mantiene contraste WCAG AA. */
+:root.dark {
+  --color-ink: 229 231 235; /* #e5e7eb */
+  --color-primary: 229 231 235; /* #e5e7eb */
+  --color-student: 128 160 207; /* #80a0cf */
+  --color-student-soft: 33 47 69; /* #212f45 */
+  --color-teacher: 174 140 190; /* #ae8cbe */
+  --color-teacher-soft: 52 38 61; /* #34263d */
+  --color-shared: 128 178 100; /* #80b264 */
+  --color-shared-soft: 32 50 31; /* #20321f */
+  --color-warning: 222 164 28; /* #dea41c */
+  --color-warning-soft: 58 43 12; /* #3a2b0c */
+  --color-danger: 186 74 70; /* #ba4a46 */
+  --color-danger-soft: 62 29 29; /* #3e1d1d */
+  --color-student-ink: 170 198 238; /* #aac6ee */
+  --color-teacher-ink: 216 192 228; /* #d8c0e4 */
+  --color-shared-ink: 170 214 146; /* #aad692 */
+  --color-warning-ink: 245 202 112; /* #f5ca70 */
+  --color-danger-ink: 242 164 160; /* #f2a4a0 */
+  --color-bg: 15 17 21; /* #0f1115 */
+  --color-surface: 24 27 33; /* #181b21 */
+  --color-border: 55 61 72; /* #373d48 */
+  --color-text-muted: 156 163 175; /* #9ca3af */
+  --color-chrome: 9 11 15; /* #090b0f */
+  --color-canvas: 226 228 232; /* #e2e4e8 */
+  --color-canvas-ink: 75 85 99; /* #4b5563 */
+  /* Líneas claras sobre fondo oscuro resaltan más: se atenúan. */
+  --mat-strong: 0.07;
+  --mat-faint: 0.035;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-base text-ink antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ink ring-offset-2 ring-offset-bg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Motivos del taller de diseño gráfico: la plancha de corte (cuadrícula) y su regla. */
+@layer components {
+  /* Plancha de corte: líneas finas cada 24 px y marcadas cada 120 px. Se llama `mat` y no
+     `bg-mat` porque tailwind-merge (cn) descartaría una de dos clases `bg-*` combinadas. El color sale de
+     --mat-color (canales RGB), así una zona puede teñirla con el tono del rol. */
+  .mat {
+    --mat-color: var(--color-ink);
+    background-color: rgb(var(--color-bg));
+    background-image: linear-gradient(
+        rgb(var(--mat-color) / var(--mat-strong)) 1px,
+        transparent 1px
+      ), linear-gradient(90deg, rgb(var(--mat-color) / var(--mat-strong)) 1px, transparent 1px),
+      linear-gradient(rgb(var(--mat-color) / var(--mat-faint)) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--mat-color) / var(--mat-faint)) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+    background-position: -1px -1px;
+  }
+
+  .mat-student {
+    --mat-color: var(--color-student);
+  }
+
+  .mat-teacher {
+    --mat-color: var(--color-teacher);
+  }
+
+  /* Regla bajo el header, en el color del rol: marca corta cada 8 px y larga cada 40 px. */
+  .ruler {
+    --ruler-color: var(--color-student);
+    height: 10px;
+    background-color: rgb(var(--ruler-color));
+    background-image: repeating-linear-gradient(
+        90deg,
+        rgb(255 255 255 / 0.8) 0 1px,
+        transparent 1px 40px
+      ), repeating-linear-gradient(90deg, rgb(255 255 255 / 0.45) 0 1px, transparent 1px 8px);
+    background-size: 100% 100%, 100% 45%;
+    background-repeat: no-repeat;
+  }
+
+  .ruler-teacher {
+    --ruler-color: var(--color-teacher);
+  }
+}

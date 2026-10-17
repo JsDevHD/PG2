@@ -20,6 +20,11 @@ Es el **único** servicio que:
 | GET | `/api/v1/users/batch?ids=a,b,c` | JWT | `[{id, name, role}]` para resolver nombres (máx. 100 ids) |
 | GET | `/health` | No | Probe de salud |
 
+- `register` exige `accept_legal: true` (aceptación de términos y autorización previa, expresa e
+  informada para el tratamiento de datos, Ley 1581 de 2012) y `legal_version` (versión de los
+  documentos que vio el usuario). Se guardan en `users.legal_consent = {version, accepted_at}` como
+  prueba de la autorización (Decreto 1377 de 2013); sin aceptación responde `422`. No se exponen en
+  la API.
 - `register` y `me` nunca devuelven `password_hash`.
 - `login` responde el mismo `401 {"detail": "Credenciales inválidas"}` si el correo no existe o si
   la contraseña es incorrecta, para no permitir enumerar correos.
@@ -72,8 +77,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- Salud: <http://localhost:8000/health> → `{"status": "ok", "service": "auth-service"}`
-- OpenAPI: <http://localhost:8000/docs>
+- Salud: <http://localhost:8001/health> → `{"status": "ok", "service": "auth-service"}`
+- OpenAPI: <http://localhost:8001/docs>
 
 Al arrancar, el servicio crea el índice de `users`, así que necesita MongoDB disponible.
 

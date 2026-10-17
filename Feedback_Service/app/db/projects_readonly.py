@@ -1,13 +1,13 @@
 """Lecturas directas (read-only) a las colecciones de Projects Service.
 
-Es el único módulo del servicio que toca `versions`, `projects` y `courses`, y nunca escribe en
-ellas. Un id con formato inválido se trata igual que uno inexistente: retorna `None`.
+Es el único módulo del servicio que toca `versions`, `projects`, `courses` y `groups`, y nunca
+escribe en ellas. Un id con formato inválido se trata igual que uno inexistente: retorna `None`.
 """
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
-from app.models.projects import CourseView, ProjectView, VersionView
+from app.models.projects import CourseView, GroupView, ProjectView, VersionView
 
 
 async def _find_by_id(collection: AsyncIOMotorCollection, doc_id: str) -> dict | None:
@@ -29,3 +29,16 @@ async def get_project(db: AsyncIOMotorDatabase, project_id: str) -> ProjectView 
 async def get_course(db: AsyncIOMotorDatabase, course_id: str) -> CourseView | None:
     document = await _find_by_id(db.courses, course_id)
     return CourseView.model_validate(document) if document else None
+
+
+async def get_group(db: AsyncIOMotorDatabase, group_id: str) -> GroupView | None:
+    document = await _find_by_id(db.groups, group_id)
+    return GroupView.model_validate(document) if document else None
+
+
+async def get_student_group(
+    db: AsyncIOMotorDatabase, project_id: str, student_id: str
+) -> GroupView | None:
+    """Grupo del estudiante en el proyecto (proyectos por grupos), o None."""
+    document = await db.groups.find_one({"project_id": project_id, "member_ids": student_id})
+    return GroupView.model_validate(document) if document else None

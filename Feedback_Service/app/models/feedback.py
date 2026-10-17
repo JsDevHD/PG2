@@ -18,8 +18,16 @@ class FeedbackInDB(BaseModel):
     # hacer cumplir en la base "una calificación final por estudiante y proyecto" (RF-09).
     project_id: str
     student_id: str
+    # Grupo de la versión en proyectos por grupos (copiado de la versión); None si es individual.
+    # En una calificación final, `student_id` es el estudiante calificado, que en un proyecto por
+    # grupos puede no ser quien subió la versión.
+    group_id: str | None = None
     teacher_id: str
     comment: str
-    score: float = Field(ge=MIN_SCORE, le=MAX_SCORE)
+    # `None` en un comentario sin calificación. Una versión tiene a lo sumo una calificación
+    # parcial vigente; las anteriores se conservan con `score_replaced=True` (nada se borra,
+    # RNF-08).
+    score: float | None = Field(default=None, ge=MIN_SCORE, le=MAX_SCORE)
+    score_replaced: bool = False
     is_final: bool = False  # True únicamente en el registro de calificación final (RF-09)
     created_at: datetime

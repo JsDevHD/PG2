@@ -1,7 +1,7 @@
 """RF-07 / CU-04 — Exportar portafolio en PDF.
 
-Export Service no es dueño de ninguna colección: lee (read-only) `courses`, `projects` y
-`versions` de Projects Service y `feedback` de Feedback Service, descarga las imágenes de Blob
+Export Service no es dueño de ninguna colección: lee (read-only) `courses`, `projects`, `groups`
+y `versions` de Projects Service y `feedback` de Feedback Service, descarga las imágenes de Blob
 Storage y resuelve nombres en Auth Service. El PDF se genera en cada petición y se entrega en la
 respuesta; no se persiste.
 """
@@ -10,8 +10,6 @@ import asyncio
 import logging
 import re
 import unicodedata
-from collections import defaultdict
-from pathlib import PurePosixPath
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, Response
@@ -20,21 +18,18 @@ from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from app.api.deps import CurrentUser, get_current_user, get_db
 from app.core.auth_client import fetch_user_names
 from app.core.pdf_builder import build_portfolio_pdf
+from app.core.portfolio import UNKNOWN_NAME, load_thread, portfolio_versions, project_data
 from app.core.security import oauth2_scheme
-from app.core.storage import display_file_name, download_file
 from app.exceptions import ForbiddenError, NotFoundError, UnprocessableEntityError
-from app.schemas.export import FeedbackData, FileKind, ProjectData, VersionWithFeedback
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 PDF_MEDIA_TYPE = "application/pdf"
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
-UNKNOWN_NAME = "Nombre no disponible"
 
 
-async def _find_by_id(collection: AsyncIOMotorCollection, doc_id: str, not_found: str) -> dict:
+async def find_by_id(collection: AsyncIOMotorCollection, doc_id: str, not_found: str) -> dict:
     if not ObjectId.is_valid(doc_id):
         raise NotFoundError(not_found)
     document = await collection.find_one({"_id": ObjectId(doc_id)})
@@ -60,33 +55,22 @@ def _resolve_student_id(
     return requested_student_id
 
 
-def _file_kind(file_url: str) -> FileKind:
-    suffix = PurePosixPath(display_file_name(file_url)).suffix.lower()
-    return FileKind.IMAGE if suffix in IMAGE_EXTENSIONS else FileKind.DOCUMENT
-
-
-async def _to_portfolio_version(
-    number: int, version: dict, feedback: list[FeedbackData]
-) -> VersionWithFeedback:
-    file_url = version["file_url"]
-    file_kind = _file_kind(file_url)
-    # Solo se descargan las imágenes; los PDF/SVG se listan por nombre en el documento.
-    image_data = await download_file(file_url) if file_kind is FileKind.IMAGE else None
-    return VersionWithFeedback(
-        number=number,
-        description=version["description"],
-        uploaded_at=version["uploaded_at"],
-        file_name=display_file_name(file_url),
-        file_kind=file_kind,
-        image_data=image_data,
-        feedback=feedback,
-    )
-
-
-def _slug(value: str) -> str:
+def slug(value: str) -> str:
     """Fragmento ASCII seguro para el nombre del archivo (sin tildes, espacios ni comillas)."""
     ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^A-Za-z0-9]+", "_", ascii_value).strip("_") or "sin_nombre"
+
+
+def pdf_response(pdf: bytes, filename: str) -> Response:
+    return Response(
+        content=pdf,
+        media_type=PDF_MEDIA_TYPE,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            # Contiene datos personales y calificaciones: que ningún intermediario lo cachee.
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get(
@@ -103,58 +87,26 @@ async def export_portfolio(
     token: str = Depends(oauth2_scheme),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ) -> Response:
-    """Genera y entrega el portafolio en PDF de un estudiante en un proyecto."""
+    """Genera y entrega el portafolio en PDF de un estudiante en un proyecto. En proyectos por
+    grupos incluye las versiones de su grupo y solo su propia calificación final."""
     if current_user.role == "docente" and not student_id:
         raise UnprocessableEntityError("El parámetro student_id es obligatorio para docentes")
 
-    project = await _find_by_id(db.projects, project_id, "Proyecto no encontrado")
-    course = await _find_by_id(db.courses, project["course_id"], "Curso no encontrado")
+    project = await find_by_id(db.projects, project_id, "Proyecto no encontrado")
+    if project.get("hidden") and current_user.role == "estudiante":
+        # Un proyecto oculto no existe para el estudiante (mismo criterio que Projects Service).
+        raise NotFoundError("Proyecto no encontrado")
+    course = await find_by_id(db.courses, project["course_id"], "Curso no encontrado")
     effective_student_id = _resolve_student_id(current_user, student_id, course)
 
-    versions = (
-        await db.versions.find({"project_id": project_id, "student_id": effective_student_id})
-        .sort("uploaded_at", 1)
-        .to_list(None)
-    )
-    version_ids = [str(version["_id"]) for version in versions]
-    feedback = []
-    if version_ids:
-        feedback = (
-            await db.feedback.find({"version_id": {"$in": version_ids}})
-            .sort("created_at", 1)
-            .to_list(None)
-        )
-
-    names = await fetch_user_names(
-        [effective_student_id, *(f["teacher_id"] for f in feedback)], token
-    )
-
-    feedback_by_version: dict[str, list[FeedbackData]] = defaultdict(list)
-    for item in feedback:
-        feedback_by_version[item["version_id"]].append(
-            FeedbackData(
-                teacher_name=names.get(item["teacher_id"], UNKNOWN_NAME),
-                comment=item["comment"],
-                score=item["score"],
-                is_final=item.get("is_final", False),
-                created_at=item["created_at"],
-            )
-        )
-    portfolio = await asyncio.gather(
-        *(
-            _to_portfolio_version(number, version, feedback_by_version[str(version["_id"])])
-            for number, version in enumerate(versions, start=1)
-        )
-    )
+    thread = await load_thread(db, project, effective_student_id)
+    names = await fetch_user_names(thread.user_ids(), token)
+    versions = await portfolio_versions(thread, names)
 
     student_name = names.get(effective_student_id, UNKNOWN_NAME)
     # ReportLab es CPU-bound: se ejecuta en un hilo para no bloquear el event loop.
     pdf = await asyncio.to_thread(
-        build_portfolio_pdf,
-        ProjectData(id=project_id, title=project["title"], description=project["description"]),
-        list(portfolio),
-        student_name,
-        course["name"],
+        build_portfolio_pdf, project_data(thread, names), versions, student_name, course["name"]
     )
     logger.info(
         "Portafolio exportado: proyecto=%s estudiante=%s versiones=%d",
@@ -162,14 +114,4 @@ async def export_portfolio(
         effective_student_id,
         len(versions),
     )
-
-    filename = f"portafolio_{_slug(project['title'])}_{_slug(student_name)}.pdf"
-    return Response(
-        content=pdf,
-        media_type=PDF_MEDIA_TYPE,
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            # Contiene datos personales y calificaciones: que ningún intermediario lo cachee.
-            "Cache-Control": "no-store",
-        },
-    )
+    return pdf_response(pdf, f"portafolio_{slug(project['title'])}_{slug(student_name)}.pdf")

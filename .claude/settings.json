@@ -1,0 +1,9 @@
+{
+  "enabledPlugins": {
+    "frontend-design@anthropic-plugin-directory": true,
+    "skill-creator@anthropic-plugin-directory": true,
+    "serena@anthropic-plugin-directory": true,
+    "superdesign@anthropic-plugin-directory": true,
+    "context7@anthropic-plugin-directory": true
+  }
+}

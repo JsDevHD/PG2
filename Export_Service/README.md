@@ -1,7 +1,9 @@
 # export-service
 
 Microservicio de exportación del **Sistema de Seguimiento de Proyectos Gráficos** (FastAPI +
-MongoDB), derivado de `service-template/`. Resuelve **RF-07 / CU-04 (Exportar portafolio en PDF)**.
+MongoDB), derivado de `service-template/`. Resuelve **RF-07 / CU-04 (Exportar portafolio en PDF)**:
+el portafolio de un estudiante en un proyecto y el **portafolio académico** que arma el estudiante
+con los cursos y proyectos que elija.
 
 Es un servicio de agregación: **no es dueño de ninguna colección** y no escribe en MongoDB. En cada
 petición reúne los datos de un estudiante en un proyecto y genera un PDF que se entrega en la
@@ -9,16 +11,39 @@ respuesta, sin persistirlo.
 
 | Fuente | Acceso | Para qué |
 |---|---|---|
-| `courses`, `projects`, `versions` (Projects Service) | lectura directa a Mongo | pertenencia (H-6), datos del proyecto e historial de versiones |
+| `courses`, `projects`, `groups`, `versions` (Projects Service) | lectura directa a Mongo (`app/core/portfolio.py`) | pertenencia (H-6), datos del proyecto, grupo e historial de versiones |
 | `feedback` (Feedback Service) | lectura directa a Mongo | retroalimentación y calificación final |
 | Azure Blob Storage (contenedor de Projects Service) | solo lectura | imágenes JPG/PNG que se embeben en el PDF |
 | `GET /api/v1/users/batch` (Auth Service) | HTTP, reenviando el JWT | nombres del estudiante y de los docentes |
 
-## Endpoint
+## Endpoints
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
-| GET | `/api/v1/projects/{project_id}/export` | Ambos (con pertenencia) | Genera y entrega el PDF |
+| GET | `/api/v1/projects/{project_id}/export` | Ambos (con pertenencia) | Portafolio de un estudiante en un proyecto |
+| POST | `/api/v1/portfolio/export` | Estudiante | Portafolio académico: `{project_ids, include_feedback, include_grades, include_images}` |
+
+### Portafolio académico (`POST /api/v1/portfolio/export`)
+
+- Exclusivo del estudiante (`403` para el docente) y solo de lo suyo: cada uno de los 1 a 100
+  `project_ids` debe existir (`404`) y ser de un curso en el que esté matriculado (`403` para toda
+  la petición). "Un curso" o "todos los cursos" se resuelven en el frontend a la lista de
+  proyectos.
+- Opciones, `true` por defecto:
+  - `include_feedback`: comentarios del docente. Sin ellos, si se incluyen calificaciones, se
+    muestra la nota parcial vigente de cada versión.
+  - `include_grades`: notas parciales y calificación final.
+  - `include_images`: sin imágenes no se descarga nada de Blob y se lista el nombre del archivo.
+- Estructura del documento (`build_student_portfolio_pdf`): portada con resumen e índice; luego
+  cada proyecto (cursos por nombre, proyectos en orden de creación) con su grupo, descripción,
+  versiones y calificación final.
+- Archivo: `portafolio_academico_{estudiante}.pdf`.
+
+### Proyectos por grupos
+
+El portafolio del estudiante incluye las versiones **de su grupo** (con quién subió cada una), los
+comentarios de esas versiones y **solo su propia calificación final**. La portada muestra el grupo y
+sus integrantes.
 
 Query param `student_id`:
 
@@ -34,9 +59,12 @@ inexistente).
 
 ### Estructura del PDF (`app/core/pdf_builder.py`)
 
-1. Portada: título del proyecto, estudiante, curso, fecha de generación y descripción.
+1. Portada: título del proyecto, estudiante, curso, fecha de generación, descripción y un aviso de
+   derechos de autor (las obras son del estudiante, Ley 23 de 1982). En los metadatos del PDF el
+   autor es el estudiante y la plataforma figura como creadora.
 2. Una página por versión, en orden cronológico: número, fecha, descripción, imagen embebida y la
-   retroalimentación parcial (docente, fecha, comentario, calificación).
+   retroalimentación parcial (docente, fecha, comentario y, si la tiene, calificación; las
+   calificaciones reemplazadas aparecen tachadas).
 3. Si existe `feedback.is_final=true`, una página final destacada con la nota y el comentario.
 4. Pie de página con el nombre de la plataforma y el número de página.
 
@@ -61,8 +89,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- Salud: <http://localhost:8000/health> → `{"status": "ok", "service": "export-service"}`
-- Documentación OpenAPI: <http://localhost:8000/docs>
+- Salud: <http://localhost:8004/health> → `{"status": "ok", "service": "export-service"}`
+- Documentación OpenAPI: <http://localhost:8004/docs>
 
 El `Dockerfile` es idéntico al del template: ReportLab es Python puro y no requiere paquetes del
 sistema operativo. Con el `docker-compose.yml` del template no se levantan Auth Service ni un

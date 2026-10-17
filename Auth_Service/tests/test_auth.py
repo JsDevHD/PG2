@@ -23,6 +23,8 @@ def user_payload(**overrides: str) -> dict:
         "email": "ana@example.com",
         "password": PASSWORD,
         "role": "estudiante",
+        "accept_legal": True,
+        "legal_version": "2026-10-08",
     }
     return payload | overrides
 
@@ -60,6 +62,33 @@ async def test_register_success(client: httpx.AsyncClient) -> None:
     assert body["created_at"]
     assert "password_hash" not in body
     assert "password" not in body
+
+
+async def test_register_stores_legal_consent(
+    client: httpx.AsyncClient, test_db: AsyncIOMotorDatabase
+) -> None:
+    user = await register(client)
+
+    document = await test_db.users.find_one({"_id": ObjectId(user["id"])})
+    assert document["legal_consent"]["version"] == "2026-10-08"
+    assert document["legal_consent"]["accepted_at"]
+    assert "legal_consent" not in user  # no se expone en la API
+
+
+@pytest.mark.parametrize("overrides", [{"accept_legal": False}, {"accept_legal": None}])
+async def test_register_requires_legal_acceptance(
+    client: httpx.AsyncClient, test_db: AsyncIOMotorDatabase, overrides: dict
+) -> None:
+    payload = user_payload()
+    if overrides["accept_legal"] is None:
+        del payload["accept_legal"]
+    else:
+        payload |= overrides
+
+    response = await client.post(REGISTER_URL, json=payload)
+
+    assert response.status_code == 422
+    assert await test_db.users.count_documents({}) == 0
 
 
 async def test_register_duplicate_email(client: httpx.AsyncClient) -> None:

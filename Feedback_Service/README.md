@@ -18,21 +18,23 @@ errores, Docker) está documentado allí.
 
 | Método | Ruta | Rol | Descripción |
 |---|---|---|---|
-| POST | `/api/v1/versions/{version_id}/feedback` | Docente titular | `{comment, score}` → `201 FeedbackResponse` (parcial) |
+| POST | `/api/v1/versions/{version_id}/feedback` | Docente titular | `{comment, score?}` → `201 FeedbackResponse` (parcial; `score` opcional) |
 | GET | `/api/v1/versions/{version_id}/feedback` | Ambos (con pertenencia) | Historial de la versión |
 | GET | `/api/v1/projects/{project_id}/feedback` | Ambos (con pertenencia) | Historial del proyecto |
-| POST | `/api/v1/projects/{project_id}/final-grade` | Docente titular | `{version_id, comment, score}` → `201 FeedbackResponse` (final) |
+| POST | `/api/v1/projects/{project_id}/final-grade` | Docente titular | `{version_id, comment, score, student_id?}` → `201 list[FeedbackResponse]` (final: uno, o uno por integrante en calificación grupal) |
 | GET | `/api/v1/projects/{project_id}/final-grade` | Ambos (con pertenencia) | Calificaciones finales del proyecto |
 | GET | `/health` | No | Probe de salud |
 
 `FeedbackResponse`:
-`{id, version_id, project_id, student_id, teacher_id, comment, score, is_final, created_at}`.
+`{id, version_id, project_id, student_id, group_id, teacher_id, comment, score, score_replaced, is_final, created_at}`
+(`score` es `null` en un comentario sin calificación).
 Los listados son `list[FeedbackResponse]` en orden cronológico (`created_at` ascendente).
 
 **Alcance por rol** (mismo criterio que Projects Service):
 
-- **Estudiante:** solo accede a lo de sus propias versiones. Pedir la retroalimentación de una
-  versión ajena → `403`. En los endpoints de proyecto debe estar matriculado en el curso, y el
+- **Estudiante:** solo accede a lo de sus propias versiones y, en proyectos por grupos, a los
+  comentarios de las versiones de su grupo (nunca a la calificación final de un compañero). Pedir
+  la retroalimentación de una versión ajena → `403`. En los endpoints de proyecto debe estar matriculado en el curso, y el
   filtro `student_id = current_user.id` se aplica siempre.
 - **Docente:** solo el titular del curso; ve la retroalimentación de todos los estudiantes.
 
@@ -43,12 +45,18 @@ Los listados son `list[FeedbackResponse]` en orden cronológico (`created_at` as
 | `401` | Token ausente, inválido o expirado |
 | `403` | Rol incorrecto para la operación, o sin pertenencia al curso/versión (H-6) |
 | `404` | `Versión no encontrada` / `Proyecto no encontrado` (también si el id está mal formado) |
-| `409` | `El estudiante ya tiene una calificación final en este proyecto` |
-| `422` | `score` fuera de `[0.0, 5.0]`, `comment` vacío, o `La versión no pertenece a este proyecto` |
+| `409` | `El estudiante ya tiene una calificación final en este proyecto`, o la calificación parcial de la versión cambió por una petición simultánea |
+| `422` | `score` fuera de `[0.0, 5.0]`, `comment` vacío, `La versión no pertenece a este proyecto`, o el `student_id` de la calificación final no corresponde al modo de calificación del proyecto |
 
 ## Reglas de negocio
 
 - `score` en `[0.0, 5.0]`, validado por Pydantic. El redondeo a un decimal lo hace el frontend.
+- **Varios comentarios por versión, una sola calificación parcial vigente.** En la
+  retroalimentación parcial `score` es opcional. Si el comentario trae `score` y la versión ya
+  tiene una calificación parcial vigente, la nueva la reemplaza: la anterior **no se borra ni se
+  edita su comentario**, solo queda con `score_replaced: true` (trazabilidad, RNF-08). Lo hace
+  cumplir el índice único parcial `unique_current_partial_grade`; si dos peticiones simultáneas
+  chocan, una recibe `409`. La calificación final siempre exige `score`.
 - Los comentarios no se editan ni se eliminan (RNF-08): no hay `PATCH` ni `DELETE`.
 - El docente puede seguir comentando una versión después de la calificación final.
 - **Una calificación final por estudiante y proyecto**, no revertible en el MVP. Varios
@@ -56,6 +64,15 @@ Los listados son `list[FeedbackResponse]` en orden cronológico (`created_at` as
   Service también genera un portafolio por estudiante y proyecto). La hace cumplir el índice
   único parcial `unique_final_grade_per_student`; un `DuplicateKeyError` se traduce a `409`,
   incluso si llegan dos peticiones simultáneas.
+- **Proyectos por grupos** (`projects.work_mode = "group"`, leído en modo solo lectura junto con
+  `groups`): la retroalimentación copia `group_id` de la versión. La calificación final depende de
+  `grading_mode`, y los dos modos son excluyentes:
+  - `individual`: exige `student_id`, un integrante del grupo de la versión (aunque no la haya
+    subido).
+  - `group`: rechaza `student_id` y crea un registro por integrante con `insert_many` ordenado,
+    todos o ninguno (`409 El grupo ya tiene una calificación final en este proyecto`).
+
+  Así cada estudiante sigue teniendo su propia calificación final.
 - `GET .../final-grade` devuelve una lista: vacía si aún no hay calificación final; para el
   estudiante, a lo sumo un elemento (la suya).
 
@@ -69,13 +86,19 @@ Los listados son `list[FeedbackResponse]` en orden cronológico (`created_at` as
 | `student_id` | string | Copiado de la versión: autor de la versión evaluada |
 | `teacher_id` | string | |
 | `comment` | string | |
-| `score` | float | `0.0`–`5.0` |
+| `score` | float \| null | `0.0`–`5.0`; `null` en un comentario sin calificación |
+| `score_replaced` | bool | `true` si una calificación parcial posterior de la misma versión la reemplazó |
 | `is_final` | bool | `true` solo en la calificación final (RF-09) |
 | `created_at` | datetime | UTC |
 
 Índices (creados al arrancar, `app/db/init_indexes.py`): `version_id`;
-`(project_id, student_id, created_at)`; y `(project_id, student_id)` único parcial con
-`is_final: true`.
+`(project_id, student_id, created_at)`; `(project_id, student_id)` único parcial con
+`is_final: true`; y `version_id` único parcial con `{is_final: false, score_replaced: false,
+score: número}` (calificación parcial vigente). Antes de crear este último, el arranque migra los
+datos previos: deja vigente solo la nota más reciente de cada versión.
+
+**Calificación parcial vigente de una versión:**
+`db.feedback.find_one({"version_id": ..., "is_final": False, "score_replaced": False, "score": {"$ne": None}})`.
 
 **Para Projects Service y Export Service:** para saber si un estudiante ya tiene calificación
 final en un proyecto, consultar
@@ -105,8 +128,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- Salud: <http://localhost:8000/health> → `{"status": "ok", "service": "feedback-service"}`
-- OpenAPI: <http://localhost:8000/docs>
+- Salud: <http://localhost:8003/health> → `{"status": "ok", "service": "feedback-service"}`
+- OpenAPI: <http://localhost:8003/docs>
 
 Al arrancar, el servicio crea los índices de `feedback`, así que necesita MongoDB disponible.
 

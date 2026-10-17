@@ -33,6 +33,9 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Sin esto el navegador oculta Content-Disposition en peticiones cross-origin y el frontend
+    # no puede usar el nombre del archivo que arma el endpoint de exportación.
+    expose_headers=["Content-Disposition"],
 )
 
 app.add_exception_handler(DomainError, domain_error_handler)

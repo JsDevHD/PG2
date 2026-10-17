@@ -15,7 +15,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.deps import CurrentUser, get_current_user
 from app.exceptions import ForbiddenError, NotFoundError
+from app.models.common import utc_now
 from app.models.course import CourseInDB
+from app.models.group import GroupInDB
 from app.models.project import ProjectInDB
 
 
@@ -74,11 +76,29 @@ async def get_titular_course(
 async def get_member_project(
     db: AsyncIOMotorDatabase, project_id: str, user: CurrentUser
 ) -> tuple[ProjectInDB, CourseInDB]:
-    """Proyecto y su curso si `user` pertenece al curso; si no, 403 (404 si no existe)."""
+    """Proyecto y su curso si `user` pertenece al curso; si no, 403 (404 si no existe).
+
+    Un proyecto oculto no existe para el estudiante: 404, igual que uno inexistente.
+    """
     oid = parse_object_id(project_id)
     doc = await db.projects.find_one({"_id": oid}) if oid else None
     if doc is None:
         raise NotFoundError("Proyecto no encontrado")
     project = ProjectInDB.model_validate(doc)
     course = await get_member_course(db, project.course_id, user)
+    if project.hidden and user.role == "estudiante":
+        raise NotFoundError("Proyecto no encontrado")
     return project, course
+
+
+async def get_student_group(
+    db: AsyncIOMotorDatabase, project_id: str, student_id: str
+) -> GroupInDB | None:
+    """Grupo del estudiante en el proyecto, o None si todavía no está en ninguno."""
+    doc = await db.groups.find_one({"project_id": project_id, "member_ids": student_id})
+    return GroupInDB.model_validate(doc) if doc else None
+
+
+def groups_open(project: ProjectInDB) -> bool:
+    """True mientras no haya vencido el plazo que fijó el docente para formar grupos."""
+    return project.group_deadline is not None and utc_now() <= project.group_deadline

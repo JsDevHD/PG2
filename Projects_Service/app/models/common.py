@@ -24,3 +24,9 @@ def utc_now() -> datetime:
     """
     now = datetime.now(UTC)
     return now.replace(microsecond=now.microsecond // 1000 * 1000)
+
+
+def to_mongo_precision(value: datetime) -> datetime:
+    """Fecha recibida del cliente, en UTC y truncada a milisegundos como `utc_now()`."""
+    value = _as_utc(value)
+    return value.replace(microsecond=value.microsecond // 1000 * 1000)

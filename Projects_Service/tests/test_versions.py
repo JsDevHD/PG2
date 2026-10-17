@@ -11,7 +11,9 @@ from starlette.datastructures import Headers
 
 from app.core import storage
 from app.core.config import get_settings
+from app.exceptions import NotFoundError
 from tests.helpers import (
+    PNG_BYTES,
     STUDENT_A_ID,
     STUDENT_B_ID,
     add_feedback,
@@ -114,15 +116,53 @@ async def test_upload_version_invalid_format(
     assert await test_db.versions.count_documents({}) == 0
 
 
-@pytest.mark.parametrize("content_type", ["image/jpeg", "application/pdf", "image/svg+xml"])
+@pytest.mark.parametrize(
+    ("content_type", "content"),
+    [
+        ("image/jpeg", b"\xff\xd8\xff\xe0contenido"),
+        ("application/pdf", b"%PDF-1.7 contenido"),
+        ("image/svg+xml", b'<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>'),
+    ],
+)
 async def test_upload_version_accepts_allowed_formats(
-    client: httpx.AsyncClient, project: dict, mock_upload: AsyncMock, content_type: str
+    client: httpx.AsyncClient,
+    project: dict,
+    mock_upload: AsyncMock,
+    content_type: str,
+    content: bytes,
 ) -> None:
     response = await upload_version(
-        client, project["id"], STUDENT_A_ID, content=b"contenido", content_type=content_type
+        client, project["id"], STUDENT_A_ID, content=content, content_type=content_type
     )
 
     assert response.status_code == 201
+
+
+@pytest.mark.parametrize(
+    ("content_type", "content"),
+    [
+        # Un SVG (que puede traer scripts) declarado como PDF o como PNG.
+        ("application/pdf", b'<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>'),
+        ("image/png", b"<svg/>"),
+        ("image/jpeg", b"contenido"),
+    ],
+)
+async def test_upload_version_content_does_not_match_type(
+    client: httpx.AsyncClient,
+    test_db: AsyncIOMotorDatabase,
+    project: dict,
+    mock_upload: AsyncMock,
+    content_type: str,
+    content: bytes,
+) -> None:
+    response = await upload_version(
+        client, project["id"], STUDENT_A_ID, content=content, content_type=content_type
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "El contenido del archivo no corresponde a su formato"}
+    mock_upload.assert_not_awaited()
+    assert await test_db.versions.count_documents({}) == 0
 
 
 async def test_upload_version_too_large(
@@ -161,15 +201,20 @@ async def test_upload_version_project_finalized(
     first = (await upload_version(client, project["id"], STUDENT_A_ID)).json()
     await add_feedback(test_db, first["id"], is_final=True)
 
-    # La calificación final bloquea el proyecto para todos los estudiantes, no solo para A.
+    # La calificación final de A solo bloquea a A: B sigue subiendo hasta que lo califiquen.
     response_a = await upload_version(client, project["id"], STUDENT_A_ID)
     response_b = await upload_version(client, project["id"], STUDENT_B_ID)
 
-    for response in (response_a, response_b):
-        assert response.status_code == 403
-        assert response.json() == {"detail": "El proyecto ya tiene calificación final asignada"}
-    assert mock_upload.await_count == 1
-    assert await test_db.versions.count_documents({}) == 1
+    assert response_a.status_code == 403
+    assert response_a.json() == {
+        "detail": "Ya tienes calificación final en este proyecto: no se aceptan más versiones"
+    }
+    assert response_b.status_code == 201
+
+    await add_feedback(test_db, response_b.json()["id"], is_final=True)
+    assert (await upload_version(client, project["id"], STUDENT_B_ID)).status_code == 403
+    assert mock_upload.await_count == 2
+    assert await test_db.versions.count_documents({}) == 2
 
 
 async def test_upload_version_allowed_with_partial_feedback(
@@ -276,3 +321,131 @@ async def test_upload_file_stores_blob_under_version_path(
     assert data == b"contenido"
     assert blob.upload_blob.await_args.kwargs["overwrite"] is False
     container.create_container.assert_awaited_once()
+
+
+# ---- GET /projects/{id}/versions/{versionId}/file ----
+
+
+@pytest.fixture
+def mock_download(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
+    """Reemplaza la descarga de Blob Storage; retorna PNG_BYTES como image/png."""
+    mock = AsyncMock(return_value=(PNG_BYTES, "image/png"))
+    monkeypatch.setattr("app.api.v1.versions.download_file", mock)
+    return mock
+
+
+async def test_get_version_file_owner_and_teacher(
+    client: httpx.AsyncClient, project: dict, mock_upload: AsyncMock, mock_download: AsyncMock
+) -> None:
+    version = (await upload_version(client, project["id"], STUDENT_A_ID)).json()
+    url = f"/api/v1/projects/{project['id']}/versions/{version['id']}/file"
+
+    as_owner = await client.get(url, headers=student(STUDENT_A_ID))
+    as_teacher = await client.get(url, headers=teacher())
+
+    for response in (as_owner, as_teacher):
+        assert response.status_code == 200
+        assert response.content == PNG_BYTES
+        assert response.headers["content-type"] == "image/png"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert "private" in response.headers["cache-control"]
+    mock_download.assert_awaited_with(version["file_url"])
+
+
+async def test_get_version_file_forbidden_for_other_student(
+    client: httpx.AsyncClient, project: dict, mock_upload: AsyncMock, mock_download: AsyncMock
+) -> None:
+    version = (await upload_version(client, project["id"], STUDENT_A_ID)).json()
+
+    response = await client.get(
+        f"/api/v1/projects/{project['id']}/versions/{version['id']}/file",
+        headers=student(STUDENT_B_ID),
+    )
+
+    assert response.status_code == 403
+    mock_download.assert_not_awaited()
+
+
+async def test_get_version_file_version_not_found(
+    client: httpx.AsyncClient, project: dict, mock_download: AsyncMock
+) -> None:
+    response = await client.get(
+        f"/api/v1/projects/{project['id']}/versions/{ObjectId()}/file", headers=teacher()
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Versión no encontrada"}
+
+
+async def test_get_version_file_blob_missing(
+    client: httpx.AsyncClient,
+    project: dict,
+    mock_upload: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    version = (await upload_version(client, project["id"], STUDENT_A_ID)).json()
+    monkeypatch.setattr(
+        "app.api.v1.versions.download_file",
+        AsyncMock(side_effect=NotFoundError("Archivo no encontrado")),
+    )
+
+    response = await client.get(
+        f"/api/v1/projects/{project['id']}/versions/{version['id']}/file", headers=teacher()
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Archivo no encontrado"}
+
+
+async def test_download_file_resolves_blob_name_from_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    stream = MagicMock()
+    stream.readall = AsyncMock(return_value=b"contenido")
+    stream.properties.content_settings.content_type = "image/png"
+    blob = MagicMock()
+    blob.download_blob = AsyncMock(return_value=stream)
+    container = MagicMock()
+    container.url = "http://azurite:10000/devstoreaccount1/versions"
+    container.container_name = "versions"
+    container.get_blob_client.return_value = blob
+    monkeypatch.setattr(storage, "get_container_client", lambda: container)
+
+    content, content_type = await storage.download_file(
+        "http://azurite:10000/devstoreaccount1/versions/versions/p1/s1/abc_boceto%20final.png"
+    )
+
+    assert (content, content_type) == (b"contenido", "image/png")
+    container.get_blob_client.assert_called_once_with("versions/p1/s1/abc_boceto final.png")
+
+
+@pytest.mark.parametrize("declaration", [None, "false"])
+async def test_upload_version_requires_rights_declaration(
+    client: httpx.AsyncClient,
+    test_db: AsyncIOMotorDatabase,
+    project: dict,
+    mock_upload: AsyncMock,
+    declaration: str | None,
+) -> None:
+    data = {"description": "Sin declarar"}
+    if declaration is not None:
+        data["rights_declaration"] = declaration
+
+    response = await client.post(
+        f"/api/v1/projects/{project['id']}/versions",
+        files={"file": ("boceto.png", PNG_BYTES, "image/png")},
+        data=data,
+        headers=student(STUDENT_A_ID),
+    )
+
+    assert response.status_code == 422
+    assert "Debes declarar" in response.json()["detail"]
+    mock_upload.assert_not_awaited()
+    assert await test_db.versions.count_documents({}) == 0
+
+
+async def test_upload_version_records_rights_declaration(
+    client: httpx.AsyncClient, test_db: AsyncIOMotorDatabase, project: dict, mock_upload: AsyncMock
+) -> None:
+    version = (await upload_version(client, project["id"], STUDENT_A_ID)).json()
+
+    doc = await test_db.versions.find_one({"_id": ObjectId(version["id"])})
+    assert doc["rights_declared_at"] == doc["uploaded_at"]

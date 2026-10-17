@@ -15,6 +15,20 @@ class UserRegisterRequest(BaseModel):
     email: NormalizedEmail
     password: str = Field(min_length=8, max_length=72)  # 72 = límite de bcrypt
     role: UserRole
+    # Autorización previa, expresa e informada para el tratamiento de datos (Ley 1581 de 2012,
+    # art. 9) y aceptación de los términos de uso. `legal_version` identifica la versión de los
+    # documentos que el usuario vio; se guarda como prueba de la autorización.
+    accept_legal: bool
+    legal_version: str = Field(min_length=1, max_length=20)
+
+    @field_validator("accept_legal")
+    @classmethod
+    def legal_must_be_accepted(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError(
+                "Debes aceptar los términos de uso y autorizar el tratamiento de tus datos"
+            )
+        return value
 
     @field_validator("password")
     @classmethod

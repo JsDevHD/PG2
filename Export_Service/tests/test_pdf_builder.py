@@ -130,3 +130,39 @@ def test_pdf_builder_escapes_user_markup() -> None:
 
     assert "Logo <b>A & B</b>" in pages[0]
     assert "<script> &" in pages[1]
+
+
+def test_pdf_builder_partial_grade_states() -> None:
+    # Varios comentarios por versión: uno sin nota, una nota reemplazada y la vigente.
+    def feedback(comment: str, hours: int, **extra) -> FeedbackData:
+        return FeedbackData(
+            teacher_name="Julián Estupiñán",
+            comment=comment,
+            created_at=START + timedelta(days=1, hours=hours),
+            **extra,
+        )
+
+    version = _version(
+        1,
+        feedback=[
+            feedback("Primera revisión", 1, score=3.0, score_replaced=True),
+            feedback("Solo un comentario", 2),
+            feedback("Nota corregida", 3, score=4.2),
+        ],
+    )
+
+    text = _pages_text(build_portfolio_pdf(PROJECT, [version], STUDENT_NAME, COURSE_NAME))[1]
+
+    assert "Calificación parcial reemplazada: 3.0 / 5.0" in text
+    assert "Calificación parcial: 4.2 / 5.0" in text
+    assert "Solo un comentario" in text
+    assert text.count("Calificación parcial") == 2
+
+
+def test_pdf_builder_rights_notice_and_author_metadata() -> None:
+    pdf = build_portfolio_pdf(PROJECT, [_version(1)], STUDENT_NAME, COURSE_NAME)
+
+    cover = " ".join(_pages_text(pdf)[0].split())
+    assert f"Las obras de este portafolio son de {STUDENT_NAME}" in cover
+    assert "Ley 23 de 1982" in cover
+    assert PdfReader(BytesIO(pdf)).metadata.author == STUDENT_NAME

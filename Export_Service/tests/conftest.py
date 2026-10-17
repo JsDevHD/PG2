@@ -44,3 +44,29 @@ async def test_db(client: httpx.AsyncClient) -> AsyncIterator[AsyncIOMotorDataba
     await _clear_collections(db)
     yield db
     await _clear_collections(db)
+
+
+@pytest.fixture
+def external_services(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[str]]:
+    """Mocks de Auth Service y Blob Storage; registra qué se les pidió."""
+    # Import diferido: los datos de prueba viven en test_export (nombres e imagen de 1x1).
+    from app.api.v1 import export as export_module
+    from app.api.v1 import portfolio as portfolio_module
+    from app.core import portfolio as portfolio_core
+    from tests.test_export import NAMES, PNG_1X1
+
+    calls: dict[str, list[str]] = {"user_ids": [], "file_urls": []}
+
+    async def fake_fetch_user_names(user_ids, token: str) -> dict[str, str]:
+        ids = list(user_ids)
+        calls["user_ids"] += ids
+        return {user_id: NAMES[user_id] for user_id in ids if user_id in NAMES}
+
+    async def fake_download_file(file_url: str) -> bytes | None:
+        calls["file_urls"].append(file_url)
+        return PNG_1X1
+
+    monkeypatch.setattr(export_module, "fetch_user_names", fake_fetch_user_names)
+    monkeypatch.setattr(portfolio_module, "fetch_user_names", fake_fetch_user_names)
+    monkeypatch.setattr(portfolio_core, "download_file", fake_download_file)
+    return calls

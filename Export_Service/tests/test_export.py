@@ -14,7 +14,7 @@ from jose import jwt
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pypdf import PdfReader
 
-from app.api.v1 import export as export_module
+from app.core import portfolio as portfolio_core
 from app.core.config import get_settings
 from app.core.pdf_builder import FILE_UNAVAILABLE_MESSAGE, NO_EVIDENCE_MESSAGE
 
@@ -50,25 +50,6 @@ def _file_url(project_id: str, student_id: str, name: str) -> str:
         "https://cuenta.blob.core.windows.net/versions/versions/"
         f"{project_id}/{student_id}/0f8fad5b-d9cb-469f-a165-70867728950e_{name}"
     )
-
-
-@pytest.fixture
-def external_services(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[str]]:
-    """Mocks de Auth Service y Blob Storage; registra qué se les pidió."""
-    calls: dict[str, list[str]] = {"user_ids": [], "file_urls": []}
-
-    async def fake_fetch_user_names(user_ids, token: str) -> dict[str, str]:
-        ids = list(user_ids)
-        calls["user_ids"] += ids
-        return {user_id: NAMES[user_id] for user_id in ids if user_id in NAMES}
-
-    async def fake_download_file(file_url: str) -> bytes | None:
-        calls["file_urls"].append(file_url)
-        return PNG_1X1
-
-    monkeypatch.setattr(export_module, "fetch_user_names", fake_fetch_user_names)
-    monkeypatch.setattr(export_module, "download_file", fake_download_file)
-    return calls
 
 
 @pytest.fixture
@@ -277,7 +258,7 @@ async def test_export_missing_blob_does_not_abort(
     async def blob_not_found(file_url: str) -> bytes | None:
         return None
 
-    monkeypatch.setattr(export_module, "download_file", blob_not_found)
+    monkeypatch.setattr(portfolio_core, "download_file", blob_not_found)
 
     response = await client.get(
         _export_url(seeded["project_id"]), headers=_auth(STUDENT_A, "estudiante")

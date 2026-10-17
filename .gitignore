@@ -3,3 +3,8 @@
 __pycache__/
 .codebase-index-cache.pkl
 .claude/settings.local.json
+
+# Secretos del despliegue en Azure (docs/DESPLIEGUE_AZURE.md)
+infra/azure/secretos.sh
+# Archivos temporales del despliegue (logs, capturas sin procesar)
+infra/azure/.trabajo/

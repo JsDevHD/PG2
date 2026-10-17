@@ -57,12 +57,20 @@ async def verify_teacher_owns_version(
 async def verify_can_read_version(
     db: AsyncIOMotorDatabase, version_id: str, current_user: CurrentUser
 ) -> VersionView:
-    """El estudiante solo accede a sus propias versiones; el docente, a las de los cursos que
-    dicta. 404 si la versión no existe, 403 si no tiene acceso."""
+    """El estudiante accede a sus propias versiones y, en proyectos por grupos, a las de su grupo;
+    el docente, a las de los cursos que dicta. 404 si la versión no existe, 403 si no tiene
+    acceso."""
     if current_user.role == "docente":
         return await verify_teacher_owns_version(db, version_id, current_user)
     version = await _get_version_or_404(db, version_id)
-    if version.student_id != current_user.id:
+    project = await projects_readonly.get_project(db, version.project_id)
+    if project is None or project.hidden:
+        # Un proyecto oculto no existe para el estudiante, igual que en Projects Service.
+        raise NotFoundError("Versión no encontrada")
+    if version.student_id == current_user.id:
+        return version
+    group = await projects_readonly.get_group(db, version.group_id) if version.group_id else None
+    if group is None or current_user.id not in group.member_ids:
         raise ForbiddenError()
     return version
 
@@ -73,7 +81,7 @@ async def verify_project_member(
     """El proyecto existe (404) y `current_user` es el docente titular o un estudiante
     matriculado en su curso (403)."""
     project = await projects_readonly.get_project(db, project_id)
-    if project is None:
+    if project is None or (project.hidden and current_user.role == "estudiante"):
         raise NotFoundError("Proyecto no encontrado")
     course = await projects_readonly.get_course(db, project.course_id)
     if course is None:

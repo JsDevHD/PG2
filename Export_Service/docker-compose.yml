@@ -1,7 +1,7 @@
 services:
   service:
     build: .
-    ports: ["8000:8000"]
+    ports: ["8004:8000"]  # host: 8001 auth, 8002 projects, 8003 feedback, 8004 export
     env_file: .env
     environment:
       # Dentro de la red de compose Mongo se alcanza por el nombre del servicio, no por localhost.

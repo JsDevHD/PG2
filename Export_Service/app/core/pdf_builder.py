@@ -3,11 +3,20 @@
 Solo recibe DTOs planos (`app/schemas/export.py`): no conoce MongoDB, Blob Storage ni Auth
 Service, de modo que se prueba con datos de prueba sin infraestructura.
 
-Estructura del documento:
-1. Portada: título del proyecto, estudiante, curso y fecha de generación.
+Dos documentos:
+
+`build_portfolio_pdf` — portafolio de un estudiante en un proyecto (RF-07):
+1. Portada: título del proyecto, estudiante, curso (y grupo) y fecha de generación.
 2. Una página por versión, en orden cronológico, con su retroalimentación parcial.
 3. Si existe calificación final (`is_final=True`), una página final destacada.
-4. Pie de página con el número de página y el nombre de la plataforma.
+
+`build_student_portfolio_pdf` — portafolio académico del estudiante: los cursos y proyectos que
+elija, con o sin comentarios, calificaciones e imágenes:
+1. Portada con el resumen y el índice de cursos y proyectos.
+2. Por cada proyecto (agrupados por curso): encabezado, descripción, sus versiones y, si se
+   incluyen calificaciones, la calificación final.
+
+Ambos llevan pie de página con el número de página y el nombre de la plataforma.
 
 Todo texto libre de usuario pasa por `_text()`: `Paragraph` interpreta un mini-markup XML y un
 `<` o `&` sin escapar rompería la generación completa.
@@ -26,6 +35,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import (
+    CondPageBreak,
     Flowable,
     Image,
     PageBreak,
@@ -36,13 +46,22 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from app.schemas.export import FeedbackData, FileKind, ProjectData, VersionWithFeedback
+from app.schemas.export import (
+    CoursePortfolio,
+    FeedbackData,
+    FileKind,
+    PortfolioOptions,
+    ProjectData,
+    VersionWithFeedback,
+)
 
 logger = logging.getLogger(__name__)
 
 PLATFORM_NAME = "Sistema de Seguimiento de Proyectos Gráficos"
 NO_EVIDENCE_MESSAGE = "No hay evidencias registradas"
 FILE_UNAVAILABLE_MESSAGE = "Archivo no disponible"
+IMAGE_OMITTED_MESSAGE = "Vista previa omitida en este documento"
+ALL_CONTENT = PortfolioOptions()
 MAX_SCORE = 5.0
 
 PAGE_MARGIN = 2 * cm
@@ -72,6 +91,11 @@ def _build_styles() -> dict[str, ParagraphStyle]:
         ),
         "h1": ParagraphStyle("h1", parent=base["Heading1"], textColor=ACCENT, spaceAfter=2),
         "h2": ParagraphStyle("h2", parent=base["Heading2"], textColor=ACCENT, spaceBefore=14),
+        "h3": ParagraphStyle("h3", parent=base["Heading3"], textColor=ACCENT, spaceBefore=10),
+        "toc_course": ParagraphStyle(
+            "toc_course", parent=body, fontName="Helvetica-Bold", spaceBefore=8
+        ),
+        "toc_project": ParagraphStyle("toc_project", parent=body, leftIndent=14, textColor=MUTED),
         "body": body,
         "meta": ParagraphStyle("meta", parent=body, fontSize=9, leading=12, textColor=MUTED),
         "label": ParagraphStyle("label", parent=body, fontName="Helvetica-Bold", textColor=MUTED),
@@ -113,6 +137,16 @@ def _build_styles() -> dict[str, ParagraphStyle]:
         ),
         "centered_meta": ParagraphStyle(
             "centered_meta", parent=body, fontSize=10, textColor=MUTED, alignment=TA_CENTER
+        ),
+        "final_score_inline": ParagraphStyle(
+            "final_score_inline",
+            parent=body,
+            fontName="Helvetica-Bold",
+            fontSize=22,
+            leading=28,
+            textColor=ACCENT,
+            spaceBefore=4,
+            spaceAfter=4,
         ),
     }
 
@@ -172,6 +206,23 @@ def _details_table(rows: list[tuple[str, str]], width: float) -> Table:
     return table
 
 
+def _rights_notice(student_name: str) -> str:
+    """Aviso de derechos de autor (Ley 23 de 1982): la obra es del estudiante, no de la app."""
+    return (
+        f"<b>Derechos de autor.</b> Las obras de este portafolio son de {_text(student_name)}, "
+        "quien conserva sus derechos morales y patrimoniales (Ley 23 de 1982). El documento se "
+        "generó con fines académicos; reproducirlo, distribuirlo o usarlo con fines comerciales "
+        "requiere autorización de su autor."
+    )
+
+
+def _group_label(project: ProjectData) -> str | None:
+    if project.group_name is None:
+        return None
+    members = ", ".join(project.group_members)
+    return f"{project.group_name} ({members})" if members else project.group_name
+
+
 def _cover(
     project: ProjectData,
     student_name: str,
@@ -179,22 +230,23 @@ def _cover(
     version_count: int,
     width: float,
 ) -> list[Flowable]:
+    rows = [("Estudiante", student_name), ("Curso", course_name)]
+    group = _group_label(project)
+    if group:
+        rows.append(("Grupo", group))
+    rows += [
+        ("Fecha de generación", _format_datetime(datetime.now(UTC))),
+        ("Versiones registradas", str(version_count)),
+    ]
     story: list[Flowable] = [
         Paragraph(PLATFORM_NAME.upper(), STYLES["kicker"]),
         Spacer(1, 2.5 * cm),
         Paragraph("Portafolio de proyecto", STYLES["kicker"]),
         Paragraph(_text(project.title), STYLES["cover_title"]),
-        _details_table(
-            [
-                ("Estudiante", student_name),
-                ("Curso", course_name),
-                ("Fecha de generación", _format_datetime(datetime.now(UTC))),
-                ("Versiones registradas", str(version_count)),
-            ],
-            width,
-        ),
+        _details_table(rows, width),
         Paragraph("Descripción del proyecto", STYLES["h2"]),
         Paragraph(_text(project.description), STYLES["body"]),
+        Paragraph(_rights_notice(student_name), STYLES["meta"]),
     ]
     if version_count == 0:
         # Flujo alternativo A1 de CU-04: el PDF se genera igual, sin evidencias.
@@ -223,8 +275,12 @@ def _image_flowable(data: bytes, max_width: float) -> Image | None:
     return Image(BytesIO(data), width=width * scale, height=height * scale)
 
 
-def _attachment(version: VersionWithFeedback, width: float) -> list[Flowable]:
+def _attachment(
+    version: VersionWithFeedback, width: float, include_images: bool = True
+) -> list[Flowable]:
     caption = Paragraph(f"Archivo: {_text(version.file_name)}", STYLES["meta"])
+    if version.file_kind is FileKind.IMAGE and not include_images:
+        return [caption, Paragraph(IMAGE_OMITTED_MESSAGE, STYLES["note"])]
     if version.file_kind is FileKind.DOCUMENT:
         # ReportLab no embebe PDF/SVG de forma trivial: se lista el archivo.
         return [
@@ -241,10 +297,20 @@ def _attachment(version: VersionWithFeedback, width: float) -> list[Flowable]:
     return [image, Spacer(1, 4), caption]
 
 
-def _feedback_entry(feedback: FeedbackData) -> list[Flowable]:
+def _score_label(feedback: FeedbackData, include_grades: bool = True) -> str:
+    if feedback.score is None or not include_grades:
+        return ""  # comentario sin calificación
+    if feedback.score_replaced:
+        return (
+            f" · Calificación parcial reemplazada: <strike>{_format_score(feedback.score)}</strike>"
+        )
+    return f" · Calificación parcial: <b>{_format_score(feedback.score)}</b>"
+
+
+def _feedback_entry(feedback: FeedbackData, include_grades: bool = True) -> list[Flowable]:
     header = (
         f"<b>{_text(feedback.teacher_name)}</b> · {_format_datetime(feedback.created_at)}"
-        f" · Calificación parcial: <b>{_format_score(feedback.score)}</b>"
+        f"{_score_label(feedback, include_grades)}"
     )
     return [
         Paragraph(header, STYLES["feedback_header"]),
@@ -252,25 +318,52 @@ def _feedback_entry(feedback: FeedbackData) -> list[Flowable]:
     ]
 
 
-def _version_section(version: VersionWithFeedback, width: float) -> list[Flowable]:
+def _current_partial_score(version: VersionWithFeedback) -> float | None:
+    """Calificación parcial vigente: con nota, no final y no reemplazada (a lo sumo una)."""
+    for feedback in reversed(version.feedback):
+        if not feedback.is_final and not feedback.score_replaced and feedback.score is not None:
+            return feedback.score
+    return None
+
+
+def _version_section(
+    version: VersionWithFeedback,
+    width: float,
+    options: PortfolioOptions = ALL_CONTENT,
+    level: int = 1,
+) -> list[Flowable]:
+    """Una versión. `level` es el nivel de su título: 1 en el portafolio de un proyecto, 2 dentro
+    del portafolio académico (donde el proyecto ocupa el nivel 1)."""
+    title, subtitle = STYLES[f"h{level}"], STYLES[f"h{level + 1}"]
+    uploaded = f"Subida el {_format_datetime(version.uploaded_at)}"
+    if version.uploaded_by:
+        uploaded += f" por {_text(version.uploaded_by)}"
     story: list[Flowable] = [
-        Paragraph(f"Versión {version.number}", STYLES["h1"]),
-        Paragraph(f"Subida el {_format_datetime(version.uploaded_at)}", STYLES["meta"]),
-        Paragraph("Descripción", STYLES["h2"]),
+        Paragraph(f"Versión {version.number}", title),
+        Paragraph(uploaded, STYLES["meta"]),
+        Paragraph("Descripción", subtitle),
         Paragraph(_text(version.description), STYLES["body"]),
         Spacer(1, 10),
-        *_attachment(version, width),
-        Paragraph("Retroalimentación", STYLES["h2"]),
+        *_attachment(version, width, options.include_images),
     ]
     partial = [feedback for feedback in version.feedback if not feedback.is_final]
-    for feedback in partial:
-        story += _feedback_entry(feedback)
-    if not partial:
-        story.append(Paragraph("Sin retroalimentación para esta versión.", STYLES["note"]))
-    if len(partial) < len(version.feedback):
+    if options.include_feedback:
+        story.append(Paragraph("Retroalimentación", subtitle))
+        for feedback in partial:
+            story += _feedback_entry(feedback, options.include_grades)
+        if not partial:
+            story.append(Paragraph("Sin retroalimentación para esta versión.", STYLES["note"]))
+    elif options.include_grades:
+        # Sin comentarios, la nota parcial vigente sigue siendo útil como resumen.
+        score = _current_partial_score(version)
+        if score is not None:
+            story.append(
+                Paragraph(f"Calificación parcial: <b>{_format_score(score)}</b>", STYLES["meta"])
+            )
+    if options.include_grades and len(partial) < len(version.feedback):
         story.append(
             Paragraph(
-                "Esta versión recibió la calificación final del proyecto (ver última sección).",
+                "Esta versión recibió la calificación final del proyecto (ver más adelante).",
                 STYLES["note"],
             )
         )
@@ -290,7 +383,8 @@ def _find_final_grade(
 def _final_grade_section(final: FeedbackData, version: VersionWithFeedback) -> list[Flowable]:
     return [
         Paragraph("Calificación final", STYLES["h1"]),
-        Paragraph(_format_score(final.score), STYLES["final_score"]),
+        # La calificación final siempre trae nota (Feedback Service la exige).
+        Paragraph(_format_score(final.score or 0.0), STYLES["final_score"]),
         Paragraph(
             f"Asignada por <b>{_text(final.teacher_name)}</b> el "
             f"{_format_datetime(final.created_at)} · Versión evaluada: {version.number}",
@@ -322,7 +416,9 @@ def build_portfolio_pdf(
         topMargin=PAGE_MARGIN,
         bottomMargin=PAGE_MARGIN,
         title=f"Portafolio - {project.title} - {student_name}",
-        author=PLATFORM_NAME,
+        # Metadatos: el autor de las obras es el estudiante; la plataforma solo genera el PDF.
+        author=student_name,
+        creator=PLATFORM_NAME,
     )
 
     story = _cover(project, student_name, course_name, len(versions), doc.width)
@@ -331,6 +427,109 @@ def build_portfolio_pdf(
     final_grade = _find_final_grade(versions)
     if final_grade is not None:
         story += [PageBreak(), *_final_grade_section(*final_grade)]
+
+    doc.build(story, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
+    return buffer.getvalue()
+
+
+def _contents_label(options: PortfolioOptions) -> str:
+    parts = ["versiones"]
+    if options.include_feedback:
+        parts.append("comentarios del docente")
+    if options.include_grades:
+        parts.append("calificaciones")
+    if not options.include_images:
+        parts.append("sin vista previa de imágenes")
+    return ", ".join(parts).capitalize()
+
+
+def _student_cover(
+    student_name: str, courses: list[CoursePortfolio], options: PortfolioOptions, width: float
+) -> list[Flowable]:
+    projects = [p for course in courses for p in course.projects]
+    story: list[Flowable] = [
+        Paragraph(PLATFORM_NAME.upper(), STYLES["kicker"]),
+        Spacer(1, 2.5 * cm),
+        Paragraph("Portafolio académico", STYLES["kicker"]),
+        Paragraph(_text(student_name), STYLES["cover_title"]),
+        _details_table(
+            [
+                ("Cursos", str(len(courses))),
+                ("Proyectos", str(len(projects))),
+                ("Versiones", str(sum(len(p.versions) for p in projects))),
+                ("Contenido", _contents_label(options)),
+                ("Fecha de generación", _format_datetime(datetime.now(UTC))),
+            ],
+            width,
+        ),
+        Paragraph("Contenido", STYLES["h2"]),
+    ]
+    for course in courses:
+        story.append(Paragraph(_text(course.name), STYLES["toc_course"]))
+        for item in course.projects:
+            count = len(item.versions)
+            label = f"{count} versión" if count == 1 else f"{count} versiones"
+            story.append(Paragraph(f"{_text(item.project.title)} · {label}", STYLES["toc_project"]))
+    story.append(Paragraph(_rights_notice(student_name), STYLES["meta"]))
+    return story
+
+
+def _inline_final_grade(final: FeedbackData, version: VersionWithFeedback) -> list[Flowable]:
+    return [
+        Paragraph("Calificación final", STYLES["h2"]),
+        Paragraph(_format_score(final.score or 0.0), STYLES["final_score_inline"]),
+        Paragraph(
+            f"Asignada por <b>{_text(final.teacher_name)}</b> el "
+            f"{_format_datetime(final.created_at)} · Versión evaluada: {version.number}",
+            STYLES["meta"],
+        ),
+        Paragraph(_text(final.comment), STYLES["notice"]),
+    ]
+
+
+def build_student_portfolio_pdf(
+    student_name: str, courses: list[CoursePortfolio], options: PortfolioOptions
+) -> bytes:
+    """Portafolio académico: varios cursos y proyectos del estudiante en un solo documento.
+
+    `courses` llega en el orden en que se presentan, cada uno con sus proyectos y las versiones
+    de cada proyecto en orden cronológico.
+    """
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=PAGE_MARGIN,
+        rightMargin=PAGE_MARGIN,
+        topMargin=PAGE_MARGIN,
+        bottomMargin=PAGE_MARGIN,
+        title=f"Portafolio académico - {student_name}",
+        author=student_name,
+        creator=PLATFORM_NAME,
+    )
+
+    story = _student_cover(student_name, courses, options, doc.width)
+    for course in courses:
+        for item in course.projects:
+            project = item.project
+            story += [
+                PageBreak(),
+                Paragraph(_text(course.name), STYLES["kicker"]),
+                Paragraph(_text(project.title), STYLES["h1"]),
+            ]
+            group = _group_label(project)
+            if group:
+                story.append(Paragraph(f"Grupo: {_text(group)}", STYLES["meta"]))
+            if project.description:
+                story.append(Paragraph(_text(project.description), STYLES["body"]))
+            if not item.versions:
+                story.append(Paragraph(f"<b>{NO_EVIDENCE_MESSAGE}</b>", STYLES["notice"]))
+            for version in item.versions:
+                # Evita que el título de una versión quede solo al pie de una página.
+                story += [CondPageBreak(6 * cm), *_version_section(version, doc.width, options, 2)]
+            final_grade = _find_final_grade(item.versions) if options.include_grades else None
+            if final_grade is not None:
+                story += [CondPageBreak(6 * cm), *_inline_final_grade(*final_grade)]
 
     doc.build(story, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
     return buffer.getvalue()

@@ -1,0 +1,5 @@
+# pnpm bloquea por defecto los scripts de instalación de las dependencias; solo se permiten estos.
+allowBuilds:
+  "@biomejs/biome": true
+  esbuild: true
+  msw: true

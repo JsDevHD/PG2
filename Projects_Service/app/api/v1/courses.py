@@ -17,7 +17,7 @@ from app.api.access import (
 )
 from app.api.deps import CurrentUser, get_current_user, get_db
 from app.exceptions import ConflictError, NotFoundError
-from app.models.common import utc_now
+from app.models.common import to_mongo_precision, utc_now
 from app.models.course import CourseInDB
 from app.models.project import ProjectInDB
 from app.schemas.course import CourseCreateRequest, CourseJoinRequest, CourseResponse
@@ -115,7 +115,12 @@ async def create_project(
     current_user: CurrentUser = Depends(require_docente),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ) -> ProjectResponse:
-    """RF-02 — crea un proyecto; solo el docente titular del curso."""
+    """RF-02 — crea un proyecto; solo el docente titular del curso.
+
+    Si es por grupos, fija el tamaño de los grupos, el plazo para formarlos y el modo de
+    calificación (individual o por grupo). El frontend advierte si los inscritos no alcanzan para
+    formar los grupos; aquí no se bloquea, porque los estudiantes pueden seguir matriculándose.
+    """
     course = await get_titular_course(db, course_id, current_user)
     doc = {
         "course_id": course.id,
@@ -123,6 +128,14 @@ async def create_project(
         "description": body.description,
         "created_by": current_user.id,
         "created_at": utc_now(),
+        "work_mode": body.work_mode,
+        "grading_mode": body.grading_mode,
+        "group_min_size": body.group_min_size,
+        "group_max_size": body.group_max_size,
+        "group_deadline": (
+            to_mongo_precision(body.group_deadline) if body.group_deadline else None
+        ),
+        "hidden": body.hidden,
     }
     result = await db.projects.insert_one(doc)
     doc["_id"] = result.inserted_id
@@ -135,9 +148,13 @@ async def list_projects(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ) -> list[ProjectResponse]:
-    """Proyectos del curso, en orden de creación. Requiere pertenencia al curso."""
+    """Proyectos del curso, en orden de creación. Requiere pertenencia al curso.
+
+    El docente ve todos; el estudiante, solo los visibles (los ocultos no existen para él).
+    """
     course = await get_member_course(db, course_id, current_user)
-    cursor = db.projects.find({"course_id": course.id}).sort(
-        [("created_at", ASCENDING), ("_id", ASCENDING)]
-    )
+    query: dict = {"course_id": course.id}
+    if current_user.role == "estudiante":
+        query["hidden"] = {"$ne": True}
+    cursor = db.projects.find(query).sort([("created_at", ASCENDING), ("_id", ASCENDING)])
     return [_project_response(doc) async for doc in cursor]

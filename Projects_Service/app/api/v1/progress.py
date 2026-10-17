@@ -1,6 +1,9 @@
 """Progreso de un curso (RF-08).
 
 progreso = (versiones con al menos una retroalimentación / total de versiones) × 100
+
+Las versiones de un estudiante son las que subió en proyectos individuales y las de su grupo en
+proyectos por grupos: una versión de grupo cuenta para cada integrante.
 """
 
 from collections import Counter
@@ -38,13 +41,27 @@ async def course_progress(
     """RF-08 — el estudiante ve solo su progreso; el docente titular, el de todo el curso."""
     course = await get_member_course(db, course_id, current_user)
 
-    project_ids = [
-        str(doc["_id"]) async for doc in db.projects.find({"course_id": course.id}, {"_id": 1})
-    ]
+    # El estudiante no cuenta los proyectos ocultos (no existen para él); el docente, todos.
+    project_query: dict = {"course_id": course.id}
+    if current_user.role == "estudiante":
+        project_query["hidden"] = {"$ne": True}
+    project_ids = [str(doc["_id"]) async for doc in db.projects.find(project_query, {"_id": 1})]
+    members_by_group = {
+        str(doc["_id"]): doc["member_ids"]
+        async for doc in db.groups.find({"project_id": {"$in": project_ids}}, {"member_ids": 1})
+    }
     version_query: dict = {"project_id": {"$in": project_ids}}
     if current_user.role == "estudiante":
-        version_query["student_id"] = current_user.id
-    versions = [doc async for doc in db.versions.find(version_query, {"student_id": 1})]
+        own_groups = [
+            gid for gid, members in members_by_group.items() if current_user.id in members
+        ]
+        version_query["$or"] = [
+            {"student_id": current_user.id, "group_id": None},
+            {"group_id": {"$in": own_groups}},
+        ]
+    versions = [
+        doc async for doc in db.versions.find(version_query, {"student_id": 1, "group_id": 1})
+    ]
 
     # Lectura read-only de `feedback` (Feedback Service). Varios comentarios sobre la misma
     # versión cuentan una sola vez.
@@ -55,10 +72,19 @@ async def course_progress(
         else set()
     )
 
-    totals = Counter(doc["student_id"] for doc in versions)
-    reviewed = Counter(doc["student_id"] for doc in versions if str(doc["_id"]) in reviewed_ids)
+    def owners(version: dict) -> list[str]:
+        group_id = version.get("group_id")
+        return members_by_group.get(group_id, []) if group_id else [version["student_id"]]
+
+    totals: Counter[str] = Counter()
+    reviewed: Counter[str] = Counter()
+    for doc in versions:
+        is_reviewed = str(doc["_id"]) in reviewed_ids
+        for owner in owners(doc):
+            totals[owner] += 1
+            reviewed[owner] += is_reviewed
     versions_count = len(versions)
-    with_feedback = sum(reviewed.values())
+    with_feedback = sum(str(doc["_id"]) in reviewed_ids for doc in versions)
 
     if current_user.role == "estudiante":
         return StudentProgressResponse(
