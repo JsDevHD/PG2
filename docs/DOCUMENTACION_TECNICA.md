@@ -1706,6 +1706,7 @@ Rediseño del 28 de octubre de 2026, solo en el frontend, después de una prueba
 6 docentes. 3 no encontraron cómo asignar la calificación final y otro tuvo que desplazarse mucho.
 Varios pusieron una segunda nota parcial creyendo que era la final, y uno dijo que el control se
 veía «transparente», como deshabilitado. La API y las reglas (RN-41 a RN-43) no cambiaron.
+El código está en el commit `bb8ec87` y se publicó como frontend `v3` (sección 19.13).
 
 **Piezas** (`frontend/src/features/feedback/`):
 
@@ -2887,11 +2888,11 @@ la imagen con una etiqueta nueva, subirla y apuntar la app a ella (19.9). Contai
 revisión nueva y le pasa el 100 % del tráfico. La revisión anterior queda inactiva para volver
 atrás si hace falta.
 
-| Fecha | Componente | Etiqueta | Cambio | Verificación |
-|---|---|---|---|---|
-| 16 oct 2026 | Los cinco | `v1` | Despliegue inicial | Secciones 19.6 y 19.7 |
-| 17 oct 2026 | frontend | `v2` | Registro: si no se elige rol, el formulario mostraba el mensaje por defecto de Zod en inglés (*Expected 'estudiante' \| 'docente', received null*). | Prueba nueva en `tests/auth.test.tsx` (76/76 pasan) y prueba en vivo en Azure |
-| 28 oct 2026 | frontend | `v3` | Rediseño de la calificación final: barra arriba del historial con estado y acceso, bloques separados para la nota parcial y la final, y diálogo de confirmación (sección 10.3.2). Sin cambios en la API | 76/76 en Vitest, 52 comprobaciones con Playwright en local y textos nuevos presentes en el bundle publicado |
+| Fecha | Componente | Etiqueta | Cambio | Verificación | Commit |
+|---|---|---|---|---|---|
+| 16 oct 2026 | Los cinco | `v1` | Despliegue inicial | Secciones 19.6 y 19.7 | Incluido en `16a332e` |
+| 17 oct 2026 | frontend | `v2` | Registro: si no se elige rol, el formulario mostraba el mensaje por defecto de Zod en inglés (*Expected 'estudiante' \| 'docente', received null*). | Prueba nueva en `tests/auth.test.tsx` (76/76 pasan) y prueba en vivo en Azure | `16a332e` |
+| 28 oct 2026 | frontend | `v3` | Rediseño de la calificación final: barra arriba del historial con estado y acceso, bloques separados para la nota parcial y la final, y diálogo de confirmación (sección 10.3.2). Sin cambios en la API | 76/76 en Vitest, 52 comprobaciones con Playwright en local y textos nuevos presentes en el bundle publicado | `bb8ec87` (código) y `8a26b6e` (documentación) |
 
 **Causa y arreglo del cambio `v2`.** Con ningún radio marcado, react-hook-form entrega `null`, no
 `undefined`. `required_error` de Zod solo cubre `undefined`, así que se mostraba el error de tipo
@@ -2957,3 +2958,16 @@ Para volver a la versión anterior, si algo fallara:
 ```bash
 az containerapp update -n frontend -g "$RG" --image "$ACR_SERVER/frontend:v2"
 ```
+
+Registro en git (hora de Colombia, rama `main`, github.com/JsDevHD/PG2):
+
+| Commit | Fecha | Contenido |
+|---|---|---|
+| `bb8ec87` | 28 oct 2026, 00:30 | «Rediseña el flujo de calificación final: acceso visible, diferenciación de la nota parcial y diálogo de confirmación». Código del frontend y las 3 pruebas actualizadas: 10 archivos, +687/−226 líneas |
+| `8a26b6e` | 28 oct 2026, 00:30 | «Documenta el rediseño de la calificación final, el manual de usuario y los resultados de despliegue y pruebas». Esta documentación, el manual con 10 capturas nuevas o rehechas, los resultados de pruebas y el informe de despliegue: 46 archivos |
+
+La revisión `frontend--0000002` se creó a las 00:27 y el push a `main` (`16a332e..8a26b6e`) se hizo
+a las 06:45. Para confirmar que la imagen publicada corresponde a `bb8ec87`, se compararon los
+archivos del build local con los que sirve Azure. Los chunks `react`, `ui`, `data` y el CSS tienen
+el mismo hash. El chunk `index` solo difiere en la URL por defecto del gateway: en local sale del
+`.env` y en la imagen queda vacía, porque se fija al arrancar con `config.js`.

@@ -30,7 +30,8 @@ Este informe reúne lo que pasó al llevar el sistema a Azure:
 | **Cuenta** | Cuenta gratuita de Azure (crédito de US$200 por 30 días), suscripción *Azure subscription 1* |
 | **Despliegue inicial** | 16 de octubre de 2026, 21:11–22:10. Los recursos se crearon entre 21:41 y 21:51 |
 | **Primera actualización** | 17 de octubre de 2026, 00:20: frontend `v2`, mensaje del registro sin rol |
-| **Commit** | `16a332e` en `main`, publicado en github.com/JsDevHD/PG2 |
+| **Segunda actualización** | 28 de octubre de 2026, 00:27: frontend `v3`, rediseño de la calificación final |
+| **Commits** | `16a332e` (despliegue inicial y `v2`), `bb8ec87` (código de `v3`) y `8a26b6e` (su documentación), en `main`, publicados en github.com/JsDevHD/PG2 |
 | **Tiempo de creación de recursos** | ≈ 7 minutos de Azure. El resto del tiempo fue verificación |
 | **Costo estimado** | ≈ US$5–6 al mes con réplicas en 0 (casi todo es el registro de contenedores) |
 | **Problemas encontrados** | 17, todos resueltos (sección 4) |
@@ -61,7 +62,9 @@ Este informe reúne lo que pasó al llevar el sistema a Azure:
 | 16 oct, 21:52–22:10 | Verificación del gateway, datos demo, prueba de tamaño, recorrido en el navegador, PDF y limpieza (P15, P16) |
 | 17 oct, 00:14 | El usuario reportó el mensaje en inglés al registrarse sin rol (P17). Arreglo y prueba nueva |
 | 17 oct, 00:20 | Frontend `v2` en Azure, verificado en vivo. Commit `16a332e` y push a `main` |
-| 28 oct | Frontend `v3` en Azure: rediseño de la calificación final (sección 10.3.2 de la documentación técnica). Build de 27 s y actualización de 21 s |
+| 28 oct, 00:27 | Frontend `v3` en Azure (revisión `frontend--0000002`): rediseño de la calificación final (sección 10.3.2 de la documentación técnica). Build de 27 s y actualización de 21 s |
+| 28 oct, 00:30 | Commits `bb8ec87` (código del frontend y 3 pruebas actualizadas) y `8a26b6e` (documentación, manual y capturas) |
+| 28 oct, 06:45 | Push a `main` (`16a332e..8a26b6e`). Se comprobó que la imagen `v3` publicada sale del mismo código que `bb8ec87` |
 
 ---
 
@@ -73,7 +76,7 @@ Todos los recursos están en el grupo `rg-graficos-udi`.
 
 | Recurso | Tipo | Región | Tamaño / SKU | Versión |
 |---|---|---|---|---|
-| `frontend` | Container App | westus | 0,25 vCPU · 0,5 GiB · 0–2 réplicas | `v2` |
+| `frontend` | Container App | westus | 0,25 vCPU · 0,5 GiB · 0–2 réplicas | `v3` |
 | `auth-service` | Container App | westus | 0,25 vCPU · 0,5 GiB · 0–2 réplicas | `v1` |
 | `projects-service` | Container App | westus | 0,5 vCPU · 1 GiB · 0–2 réplicas | `v1` |
 | `feedback-service` | Container App | westus | 0,25 vCPU · 0,5 GiB · 0–2 réplicas | `v1` |
@@ -125,6 +128,7 @@ documentación técnica).
 | Primer `/health` con réplicas en 0 (arranque en frío) | 13 s |
 | `GET /courses` en caliente: por APIM / directo al servicio | 0,42–0,48 s / 0,48–0,56 s |
 | Build y despliegue del frontend `v2` | 31 s de build + 20 s de actualización |
+| Build y despliegue del frontend `v3` | 27 s de build + 21 s de actualización |
 
 Pasar por APIM, que está en eastus mientras los servicios están en westus, **no añadió una
 latencia apreciable**.
@@ -493,7 +497,7 @@ deshacer.
    grandes y el recorrido en el navegador.
 7. **Un error al imprimir no siempre significa que el comando falló.** Confirmar el estado
    consultando (P13).
-8. **Etiquetas de imagen versionadas** (`v1`, `v2`): cada cambio queda trazable y se puede volver
+8. **Etiquetas de imagen versionadas** (`v1`, `v2`, `v3`): cada cambio queda trazable y se puede volver
    atrás con un comando.
 9. **Las pruebas de carga, con datos propios**, no con las cuentas demo.
 10. **Controlar el costo desde el inicio**: réplicas en 0, tope en Log Analytics, presupuesto con

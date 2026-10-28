@@ -6,6 +6,8 @@ no se escribieron a mano.
 
 > **Resultado: 176 de 176 pruebas pasaron.** 0 fallos, 0 omitidas y 0 advertencias.
 > Ejecución: 18 de octubre de 2026, 17:32 (hora de Colombia).
+> El backend no cambió después. El frontend se volvió a probar el 28 de octubre de 2026, con el
+> rediseño de la calificación final (commit `bb8ec87`, sección 9).
 
 ## Contenido
 
@@ -460,6 +462,9 @@ comprueban:
 | `tests/projects.test.tsx` | El 409 se muestra dentro del diálogo | El mismo recorrido. El mensaje esperado es «Este estudiante ya tiene una calificación final registrada.», el que pide el rediseño |
 
 Resultado final con `pnpm test`: **9 archivos, 76 de 76 pruebas pasaron.**
+
+El cambio y las 3 pruebas actualizadas están en el commit `bb8ec87` (28 de octubre de 2026, 00:30),
+publicado en `main`.
 
 Qué cubre está en la sección 15 de [`DOCUMENTACION_TECNICA.md`](DOCUMENTACION_TECNICA.md). Con el
 backend, el proyecto suma **252 pruebas automáticas, todas en verde**.
