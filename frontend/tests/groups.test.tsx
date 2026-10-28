@@ -155,14 +155,12 @@ describe("Calificación final en proyectos por grupos", () => {
     );
     renderApp(path, { as: "docente" });
     await before?.();
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Asignar calificación final" }),
-    );
+    await userEvent.type(await screen.findByLabelText("Comentario final"), "Buen trabajo");
+    await userEvent.type(screen.getByLabelText("Nota final"), "4.5");
+    await userEvent.click(screen.getByRole("button", { name: "Asignar calificación final" }));
     const dialog = await screen.findByRole("dialog");
-    await userEvent.type(within(dialog).getByLabelText("Comentario final"), "Buen trabajo");
-    await userEvent.type(within(dialog).getByLabelText("Nota final"), "4.5");
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Asignar calificación final" }),
+      within(dialog).getByRole("button", { name: "Confirmar calificación final" }),
     );
     await waitFor(() => expect(body.version_id).toBe("gv1"));
     return { body, dialog };

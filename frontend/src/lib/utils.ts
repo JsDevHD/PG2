@@ -27,6 +27,11 @@ export function formatScore(score: number): string {
   return score.toFixed(1);
 }
 
+/** "4,5": la nota con coma decimal (flujo de calificación final). */
+export function formatScoreComma(score: number): string {
+  return formatScore(score).replace(".", ",");
+}
+
 export function formatPercent(value: number): string {
   return `${Math.round(value)} %`;
 }

@@ -234,17 +234,15 @@ describe("Calificaciones", () => {
       ),
     );
     renderApp(`${HISTORY}?version=v2`, { as: "docente" });
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Asignar calificación final" }),
-    );
-    await userEvent.type(screen.getByLabelText("Comentario final"), "Cierre");
+    await userEvent.type(await screen.findByLabelText("Comentario final"), "Cierre");
     await userEvent.type(screen.getByLabelText("Nota final"), "4.5");
-    const dialog = screen.getByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: "Revisar y confirmar" }));
+    const dialog = await screen.findByRole("dialog");
     await userEvent.click(
-      within(dialog).getByRole("button", { name: "Asignar calificación final" }),
+      within(dialog).getByRole("button", { name: "Confirmar calificación final" }),
     );
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
-      "El estudiante ya tiene una calificación final en este proyecto",
+      "Este estudiante ya tiene una calificación final registrada.",
     );
   });
 });

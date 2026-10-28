@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input, Textarea } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { toast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/errors";
 import { formatScore } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { TriangleAlert } from "lucide-react";
+import { MessageSquare, TriangleAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { currentPartialGrade, useCreateFeedback, useFeedback } from "./hooks";
 import { type FeedbackFormValues, feedbackSchema } from "./schemas";
@@ -59,12 +60,23 @@ export function FeedbackForm({ versionId, versionNumber, projectId, courseId }: 
   });
 
   return (
+    // Bloque de la nota parcial: borde lateral del docente, distinto del bloque de la calificación
+    // final (borde y encabezado de advertencia), para no confundir una con la otra.
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-sm sm:p-5"
+      className="flex flex-col gap-4 rounded-lg border border-l-4 border-border border-l-teacher bg-surface p-4 shadow-sm sm:p-5"
     >
-      <h3 className="font-semibold">Agregar retroalimentación a v{versionNumber}</h3>
+      <div className="flex flex-col gap-1">
+        <h3 className="flex flex-wrap items-center gap-2 font-semibold">
+          <MessageSquare className="size-4 shrink-0 text-teacher-ink" aria-hidden />
+          Comentario y nota parcial
+          <Badge tone="teacher">v{versionNumber}</Badge>
+        </h3>
+        <p className="text-sm text-muted">
+          La nota parcial se puede reemplazar con una nueva retroalimentación.
+        </p>
+      </div>
       <Field label="Comentario" error={errors.comment?.message}>
         <Textarea
           rows={4}

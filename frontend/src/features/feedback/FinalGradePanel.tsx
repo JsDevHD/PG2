@@ -1,18 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/toast";
-import { toApiError } from "@/lib/errors";
 import { formatDate, formatScore } from "@/lib/utils";
-import type { FeedbackResponse, VersionResponse } from "@/types/api";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Award } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useAssignFinalGrade, useFinalGrades } from "./hooks";
-import { type FinalGradeFormValues, finalGradeSchema } from "./schemas";
+import type { FeedbackResponse } from "@/types/api";
+import { Award, Stamp } from "lucide-react";
+import { useId } from "react";
+import { useFinalGrades } from "./hooks";
+import { type FinalGradeFlow, type GradeTarget, findGrade } from "./useFinalGradeFlow";
 
 function FinalGradeSummary({
   grade,
@@ -38,44 +33,16 @@ function FinalGradeSummary({
   );
 }
 
-/**
- * A quién se califica:
- * - `student`: un estudiante (proyecto individual, o un integrante si el grupo se califica
- *   individualmente; en ese caso `inGroup` hace que se envíe su id).
- * - `group`: todo el grupo a la vez (calificación grupal); Feedback Service crea un registro por
- *   integrante.
- */
-export type GradeTarget =
-  | { kind: "student"; studentId: string; name?: string; inGroup?: boolean }
-  | { kind: "group"; groupId: string; name: string; memberNames: string[] };
-
 interface FinalGradePanelProps {
   projectId: string;
-  courseId: string;
   target: GradeTarget;
-  /** Versiones del hilo (del estudiante o del grupo), para elegir sobre cuál se califica. */
-  versions: VersionResponse[];
   numbers: Map<string, number>;
-  canAssign: boolean;
-}
-
-function findGrade(grades: FeedbackResponse[] | undefined, target: GradeTarget) {
-  return grades?.find((item) =>
-    target.kind === "group"
-      ? item.group_id === target.groupId
-      : item.student_id === target.studentId,
-  );
+  /** Flujo del docente para asignarla; sin él (estudiante) el panel solo la muestra. */
+  flow?: FinalGradeFlow;
 }
 
 /** RF-09: una calificación final por estudiante (o grupo) y proyecto, no revertible en el MVP. */
-export function FinalGradePanel({
-  projectId,
-  courseId,
-  target,
-  versions,
-  numbers,
-  canAssign,
-}: FinalGradePanelProps) {
+export function FinalGradePanel({ projectId, target, numbers, flow }: FinalGradePanelProps) {
   const finalGrades = useFinalGrades(projectId);
   const grade = findGrade(finalGrades.data, target);
 
@@ -88,149 +55,97 @@ export function FinalGradePanel({
         label={target.kind === "group" ? "Calificación final del grupo" : "Calificación final"}
       />
     );
-  if (!canAssign) {
+  if (!flow) {
     return (
       <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
         Aún no tienes calificación final en este proyecto.
       </p>
     );
   }
-  if (versions.length === 0) return null;
-  return (
-    <AssignFinalGrade
-      projectId={projectId}
-      courseId={courseId}
-      target={target}
-      versions={versions}
-      numbers={numbers}
-    />
-  );
+  if (flow.versions.length === 0) return null;
+  return <AssignFinalGrade flow={flow} target={target} numbers={numbers} />;
 }
 
-function dialogText(target: GradeTarget): { prompt: string; description: string } {
+/** A quién alcanza la calificación: importa sobre todo en los proyectos por grupos. */
+function scopeText(target: GradeTarget): string {
   if (target.kind === "group") {
-    return {
-      prompt: `Cuando el grupo termine, asigna una sola calificación final para ${target.name}.`,
-      description: `Se asigna una vez a todo el grupo (${target.memberNames.join(", ")}) y no se puede cambiar. Después, ningún integrante podrá subir más versiones.`,
-    };
+    return `Una sola nota para todo el grupo ${target.name} (${target.memberNames.join(", ")}). Después, ningún integrante podrá subir más versiones.`;
   }
+  const who = target.name ?? "este estudiante";
   if (target.inGroup) {
-    const who = target.name ?? "este integrante";
-    return {
-      prompt: `Asigna la calificación final de ${who}.`,
-      description: `Es solo para ${who} y no se puede cambiar. Después, ${who} no podrá subir más versiones; el resto del grupo sí, hasta que lo califiques.`,
-    };
+    return `Es solo para ${who}. Después, ${who} no podrá subir más versiones; el resto del grupo sí, hasta que lo califiques.`;
   }
-  return {
-    prompt: "Cuando el proyecto esté terminado, asigna la calificación final.",
-    description:
-      "Solo se asigna una vez por estudiante y no se puede cambiar. Después, el estudiante no podrá subir más versiones.",
-  };
+  return `Se asigna una sola vez a ${who}. Después, no podrá subir más versiones.`;
 }
 
+/**
+ * Bloque «Calificación final (definitiva)»: borde y encabezado de advertencia y opacidad completa,
+ * distinto del bloque de la nota parcial. Enviar no registra nada: abre la confirmación.
+ */
 function AssignFinalGrade({
-  projectId,
-  courseId,
+  flow,
   target,
-  versions,
   numbers,
-}: Pick<FinalGradePanelProps, "projectId" | "courseId" | "target" | "versions" | "numbers">) {
-  const [open, setOpen] = useState(false);
-  const assign = useAssignFinalGrade(projectId, courseId);
-  const latest = versions.at(-1);
-  const [selectedId, setSelectedId] = useState(latest?.id ?? "");
-  // Solo se envía una versión del hilo que se está calificando, y la calificación final no se
-  // puede corregir.
-  const versionId = versions.some((v) => v.id === selectedId) ? selectedId : (latest?.id ?? "");
-  const [serverError, setServerError] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FinalGradeFormValues>({ resolver: zodResolver(finalGradeSchema) });
-  const text = dialogText(target);
-
-  const onSubmit = handleSubmit((values) => {
-    setServerError(null);
-    const studentId = target.kind === "student" && target.inGroup ? target.studentId : undefined;
-    assign.mutate(
-      { ...values, version_id: versionId, ...(studentId ? { student_id: studentId } : {}) },
-      {
-        onSuccess: () => {
-          toast.success(
-            target.kind === "group"
-              ? "Calificación del grupo asignada"
-              : "Calificación final asignada",
-          );
-          setOpen(false);
-        },
-        // 409 (ya tiene calificación final) o 422: dentro del diálogo, donde se está actuando.
-        onError: (error) => setServerError(toApiError(error).message),
-      },
-    );
-  });
+}: { flow: FinalGradeFlow; target: GradeTarget; numbers: Map<string, number> }) {
+  const titleId = useId();
+  const { form, errors, versions, latest, versionId } = flow;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted">{text.prompt}</p>
-        <DialogTrigger asChild>
-          <Button variant="secondary" className="shrink-0">
-            <Award aria-hidden />
-            Asignar calificación final
-          </Button>
-        </DialogTrigger>
+    <section
+      ref={flow.blockRef}
+      aria-labelledby={titleId}
+      className="scroll-mt-20 overflow-hidden rounded-lg border-2 border-warning bg-surface shadow-sm"
+    >
+      <div className="flex flex-col gap-1 border-b-2 border-warning bg-warning-soft px-4 py-3 text-warning-ink sm:px-5">
+        <h3 id={titleId} className="flex items-center gap-2 font-semibold">
+          <Stamp className="size-4 shrink-0" aria-hidden />
+          Calificación final (definitiva)
+        </h3>
+        <p className="text-sm">
+          La calificación final no se puede corregir y cierra la entrega de versiones de este
+          proyecto.
+        </p>
       </div>
-      <DialogContent
-        title={
-          target.kind === "group" ? `Calificación final de ${target.name}` : "Calificación final"
-        }
-        description={text.description}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          flow.request((event.nativeEvent as SubmitEvent).submitter, "form");
+        }}
+        noValidate
+        className="flex flex-col gap-4 p-4 sm:p-5"
       >
-        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-          <Field label="Versión evaluada">
-            <Select value={versionId} onChange={(event) => setSelectedId(event.target.value)}>
-              {[...versions].reverse().map((version) => (
-                <option key={version.id} value={version.id}>
-                  v{numbers.get(version.id)} del {formatDate(version.uploaded_at)}
-                  {version.id === latest?.id ? " (última)" : ""}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Comentario final" error={errors.comment?.message}>
-            <Textarea rows={4} {...register("comment")} />
-          </Field>
-          <Field
-            label="Nota final"
-            error={errors.score?.message}
-            hint="De 0 a 5"
-            className="sm:w-36"
-          >
-            <Input
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              min={0}
-              max={5}
-              {...register("score")}
-            />
-          </Field>
-          {serverError && (
-            <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-ink">
-              {serverError}
-            </p>
-          )}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" loading={assign.isPending}>
-              Asignar calificación final
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <p className="text-sm text-muted">{scopeText(target)}</p>
+        <Field label="Versión evaluada">
+          <Select value={versionId} onChange={(event) => flow.selectVersion(event.target.value)}>
+            {[...versions].reverse().map((version) => (
+              <option key={version.id} value={version.id}>
+                v{numbers.get(version.id)} del {formatDate(version.uploaded_at)}
+                {version.id === latest?.id ? " (última)" : ""}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Comentario final" error={errors.comment?.message}>
+          <Textarea rows={4} {...form.register("comment")} />
+        </Field>
+        <Field label="Nota final" error={errors.score?.message} hint="De 0 a 5" className="sm:w-36">
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min={0}
+            max={5}
+            {...form.register("score")}
+          />
+        </Field>
+        {/* Otro nombre que el botón de la barra: este no registra, lleva a la confirmación. */}
+        <div className="flex justify-end">
+          <Button type="submit" className="w-full sm:w-auto">
+            <Stamp aria-hidden />
+            Revisar y confirmar
+          </Button>
+        </div>
+      </form>
+    </section>
   );
 }

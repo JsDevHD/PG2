@@ -1,24 +1,33 @@
 import { cn } from "@/lib/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
-interface DialogContentProps {
+/** El resto de las props (foco inicial y final, `aria-*`) pasan tal cual al contenido de Radix. */
+interface DialogContentProps
+  extends Omit<ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, "title"> {
   title: string;
   description?: string;
   children: ReactNode;
   className?: string;
 }
 
-export function DialogContent({ title, description, children, className }: DialogContentProps) {
+export function DialogContent({
+  title,
+  description,
+  children,
+  className,
+  ...props
+}: DialogContentProps) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-ink/40 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
       <DialogPrimitive.Content
+        {...props}
         className={cn(
           "fixed inset-x-4 top-1/2 z-50 mx-auto max-w-lg -translate-y-1/2 rounded-lg border border-border bg-surface p-6 shadow-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           className,

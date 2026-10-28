@@ -11,10 +11,17 @@ import { ProjectActions } from "@/features/courses/ProjectActions";
 import { ProjectBrief } from "@/features/courses/ProjectBrief";
 import { isTeacherProgress, useProgress } from "@/features/courses/hooks";
 import { ExportButton } from "@/features/export/ExportButton";
+import { ConfirmFinalGradeDialog } from "@/features/feedback/ConfirmFinalGradeDialog";
 import { FeedbackForm } from "@/features/feedback/FeedbackForm";
 import { FeedbackThread } from "@/features/feedback/FeedbackThread";
+import { FinalGradeBar } from "@/features/feedback/FinalGradeBar";
 import { FinalGradePanel } from "@/features/feedback/FinalGradePanel";
 import { useFinalGrades, useProjectFeedback } from "@/features/feedback/hooks";
+import {
+  type FinalGradeFlow,
+  type GradeTarget,
+  useFinalGradeFlow,
+} from "@/features/feedback/useFinalGradeFlow";
 import { groupOf, isGroupProject } from "@/lib/groups";
 import { formatDateTime } from "@/lib/utils";
 import type {
@@ -44,23 +51,54 @@ function showFeedbackOnSmallScreens() {
   );
 }
 
+/**
+ * A quién se califica en el cierre: el estudiante (proyecto individual), todo el grupo
+ * (calificación grupal) o un integrante (calificación individual en un proyecto por grupos).
+ */
+function gradeTargetOf(
+  project: ProjectResponse,
+  group: GroupResponse | undefined,
+  studentId: string | undefined,
+  nameOf: (id: string) => string,
+): GradeTarget | undefined {
+  if (!isGroupProject(project)) {
+    return studentId ? { kind: "student", studentId, name: nameOf(studentId) } : undefined;
+  }
+  if (!group) return undefined;
+  if (project.grading_mode === "group") {
+    return {
+      kind: "group",
+      groupId: group.id,
+      name: group.name,
+      memberNames: group.member_ids.map(nameOf),
+    };
+  }
+  return studentId
+    ? { kind: "student", studentId, name: nameOf(studentId), inGroup: true, groupName: group.name }
+    : undefined;
+}
+
 interface ClosingProps {
-  course: CourseResponse;
   project: ProjectResponse;
   versions: VersionResponse[];
   numbers: Map<string, number>;
   feedback: FeedbackResponse[];
   isTeacher: boolean;
+  /** Lo calcula la página: la barra superior califica al mismo estudiante o grupo. */
+  target?: GradeTarget;
+  /** Solo el docente: el flujo de la calificación final (bloque, barra y confirmación). */
+  finalGrade?: FinalGradeFlow;
 }
 
 /** Cierre de un proyecto individual: la calificación final y el portafolio de un estudiante. */
 function StudentClosing({
-  course,
   project,
   versions,
   numbers,
   feedback,
   isTeacher,
+  target,
+  finalGrade,
   studentId,
   studentName,
 }: ClosingProps & { studentId: string; studentName?: string }) {
@@ -72,14 +110,14 @@ function StudentClosing({
           ? `Cierre del proyecto de ${studentName ?? "este estudiante"}`
           : "Cierre del proyecto"}
       </h2>
-      <FinalGradePanel
-        projectId={project.id}
-        courseId={course.id}
-        target={{ kind: "student", studentId }}
-        versions={own}
-        numbers={numbers}
-        canAssign={isTeacher}
-      />
+      {target && (
+        <FinalGradePanel
+          projectId={project.id}
+          target={target}
+          numbers={numbers}
+          flow={finalGrade}
+        />
+      )}
       <ExportButton
         projectId={project.id}
         studentId={isTeacher ? studentId : undefined}
@@ -96,23 +134,25 @@ function StudentClosing({
  * portafolio siempre es de un estudiante: el docente elige de qué integrante.
  */
 function GroupClosing({
-  course,
   project,
   versions,
   numbers,
   feedback,
   isTeacher,
+  target,
+  finalGrade,
   group,
+  memberId,
+  onMemberChange,
   nameOf,
-}: ClosingProps & { group: GroupResponse; nameOf: (id: string) => string }) {
-  const user = useCurrentUser();
+}: ClosingProps & {
+  group: GroupResponse;
+  /** Integrante del cierre: el que elige el docente o el propio estudiante. */
+  memberId: string | undefined;
+  onMemberChange: (id: string) => void;
+  nameOf: (id: string) => string;
+}) {
   const finalGrades = useFinalGrades(project.id);
-  const [chosen, setChosen] = useState(group.member_ids[0] ?? "");
-  const memberId = isTeacher
-    ? group.member_ids.includes(chosen)
-      ? chosen
-      : group.member_ids[0]
-    : user.id;
   const groupVersions = versions.filter((v) => v.group_id === group.id);
   const groupGrading = project.grading_mode === "group";
   const gradedIds = new Set(
@@ -137,7 +177,7 @@ function GroupClosing({
           <label htmlFor="integrante" className="text-sm font-medium">
             {groupGrading ? "Portafolio de" : "Integrante"}
           </label>
-          <Select id="integrante" value={memberId} onChange={(e) => setChosen(e.target.value)}>
+          <Select id="integrante" value={memberId} onChange={(e) => onMemberChange(e.target.value)}>
             {group.member_ids.map((id) => (
               <option key={id} value={id}>
                 {nameOf(id)}
@@ -147,32 +187,13 @@ function GroupClosing({
           </Select>
         </div>
       )}
-      {groupGrading ? (
+      {target && (
         <FinalGradePanel
           projectId={project.id}
-          courseId={course.id}
-          target={{
-            kind: "group",
-            groupId: group.id,
-            name: group.name,
-            memberNames: group.member_ids.map(nameOf),
-          }}
-          versions={groupVersions}
+          target={target}
           numbers={numbers}
-          canAssign={isTeacher}
+          flow={finalGrade}
         />
-      ) : (
-        memberId && (
-          <FinalGradePanel
-            key={memberId}
-            projectId={project.id}
-            courseId={course.id}
-            target={{ kind: "student", studentId: memberId, name: nameOf(memberId), inGroup: true }}
-            versions={groupVersions}
-            numbers={numbers}
-            canAssign={isTeacher}
-          />
-        )
       )}
       {memberId && (
         <ExportButton
@@ -230,6 +251,30 @@ function VersionHistory({ course, project }: { course: CourseResponse; project: 
   const closingGroup = isTeacher
     ? groupList.find((g) => g.id === (groupFilter ?? selected?.group_id))
     : myGroup;
+  // En un proyecto por grupos, el integrante del cierre: el que elige el docente (por omisión, el
+  // primero) o el propio estudiante.
+  const [memberChoice, setMemberChoice] = useState("");
+  const closingMember = !closingGroup
+    ? undefined
+    : !isTeacher
+      ? user.id
+      : closingGroup.member_ids.includes(memberChoice)
+        ? memberChoice
+        : closingGroup.member_ids[0];
+  const gradeTarget = gradeTargetOf(
+    project,
+    closingGroup,
+    byGroups ? closingMember : closingStudent,
+    byGroups ? (id) => nameOf(id) : studentName,
+  );
+  const finalGrade = useFinalGradeFlow({
+    projectId: project.id,
+    courseId: course.id,
+    target: isTeacher ? gradeTarget : undefined,
+    versions: (versions.data ?? []).filter((v) =>
+      byGroups ? v.group_id === closingGroup?.id : v.student_id === closingStudent,
+    ),
+  });
 
   const updateParams = (changes: Record<string, string | undefined>) => {
     const next = new URLSearchParams(params);
@@ -253,12 +298,13 @@ function VersionHistory({ course, project }: { course: CourseResponse; project: 
   };
 
   const closingProps: ClosingProps = {
-    course,
     project,
     versions: list,
     numbers,
     feedback: projectFeedback.data ?? [],
     isTeacher,
+    target: gradeTarget,
+    finalGrade: isTeacher ? finalGrade : undefined,
   };
 
   return (
@@ -306,6 +352,23 @@ function VersionHistory({ course, project }: { course: CourseResponse; project: 
           )
         }
       />
+
+      {/* Antes de la descripción: el acceso a la calificación final queda a la vista sin desplazarse. */}
+      {isTeacher &&
+        (versions.isLoading ? (
+          <Skeleton className="mb-6 h-20" />
+        ) : (
+          versions.data && (
+            <FinalGradeBar
+              flow={finalGrade}
+              viewing={
+                selected
+                  ? `v${selectedNumber}, subida el ${formatDateTime(selected.uploaded_at)}`
+                  : undefined
+              }
+            />
+          )
+        ))}
 
       <div className="mb-6 max-w-3xl">
         <ProjectBrief project={project} />
@@ -476,6 +539,8 @@ function VersionHistory({ course, project }: { course: CourseResponse; project: 
                     key={closingGroup.id}
                     {...closingProps}
                     group={closingGroup}
+                    memberId={closingMember}
+                    onMemberChange={setMemberChoice}
                     nameOf={(id) => nameOf(id)}
                   />
                 )
@@ -489,6 +554,10 @@ function VersionHistory({ course, project }: { course: CourseResponse; project: 
                 )}
           </div>
         </div>
+      )}
+
+      {isTeacher && (
+        <ConfirmFinalGradeDialog flow={finalGrade} projectTitle={project.title} numbers={numbers} />
       )}
     </>
   );
