@@ -6,7 +6,9 @@ copiar. Se sigue en orden; cada paso indica qué debe salir para continuar.
 > **El sistema ya se desplegó con esta guía** (16 de octubre de 2026). El registro de ese
 > despliegue está en la sección 19 de [`DOCUMENTACION_TECNICA.md`](DOCUMENTACION_TECNICA.md):
 > recursos, URLs, salidas reales, tiempos, capturas y problemas encontrados. Esta guía ya incorpora
-> esas correcciones.
+> esas correcciones. El informe [`INFORME_DESPLIEGUE_AZURE.md`](INFORME_DESPLIEGUE_AZURE.md)
+> explica cada problema y el porqué de cada comando, y dice **qué cambiar para montarlo en otra
+> cuenta, región o sistema operativo** (sección 6).
 
 > **Antes de empezar:** sigue los comandos en **Git Bash**, desde la raíz del repositorio.
 > PowerShell y `cmd` interpretan mal los `&` y `=` de las cadenas de conexión, y en Git Bash el
@@ -132,12 +134,19 @@ az login                                       # o: az login --use-device-code (
 az account list -o table                       # si tienes varias suscripciones:
 az account set --subscription "<nombre o id>"  # elige la del crédito
 
-az extension add --name containerapp --upgrade
-az extension add --name apim --upgrade 2>/dev/null || true   # en CLIs nuevas ya viene incluida
+# En Azure CLI 2.90 containerapp y apim ya vienen incluidos; en versiones viejas hacen falta:
+az extension add --name containerapp --upgrade 2>/dev/null || true
+az extension add --name apim --upgrade 2>/dev/null || true
 
+# --wait: en una suscripción nueva, crear recursos antes de que el proveedor quede "Registered"
+# da SubscriptionNotFound (pasó con Storage). Puede tardar varios minutos.
 for p in Microsoft.App Microsoft.OperationalInsights Microsoft.ContainerRegistry \
          Microsoft.Storage Microsoft.DocumentDB Microsoft.ApiManagement; do
-  az provider register --namespace $p
+  echo "Registrando $p..."; az provider register --namespace $p --wait
+done
+for p in Microsoft.App Microsoft.OperationalInsights Microsoft.ContainerRegistry \
+         Microsoft.Storage Microsoft.DocumentDB Microsoft.ApiManagement; do
+  echo "$p: $(az provider show -n $p --query registrationState -o tsv)"   # los seis: Registered
 done
 
 az group create -n "$RG" -l "$LOC"
@@ -640,6 +649,10 @@ az containerapp logs show -n feedback-service -g "$RG" --type system   # errores
 | `RequestDisallowedByPolicy` | Región no permitida en Azure for Students | Cambia `LOC` (sección 1) |
 | `AADSTS530035: Access has been blocked by security defaults` | Expiró la sesión de `az` y Entra ID exige MFA de nuevo | `az login --tenant <id>` o `az login --use-device-code --tenant <id>` (paso 3) |
 | `az login` se queda esperando | La ventana de Windows para elegir la cuenta quedó detrás de otras | Búscala en la barra de tareas, o usa `--use-device-code` |
+| `(SubscriptionNotFound) Subscription <id> was not found` al crear el Storage | Suscripción recién creada: el proveedor `Microsoft.Storage` todavía no estaba registrado | Registrar los proveedores con `--wait` (paso 3) y repetir |
+| `touch`, `source` u `openssl` «no se reconoce como nombre de un cmdlet» | Los comandos se pegaron en PowerShell | Usar Git Bash: el prompt termina en `$`, no en `PS C:\...>` |
+| El Storage o el registro rechazan el nombre | `SUFIJO` con mayúsculas o guiones: Storage solo admite minúsculas y números (3–24) | `SUFIJO` en minúsculas (paso 2). Si ya se guardó un `STORAGE_CONN=''` vacío, bórralo de `secretos.sh` |
+| `winget` «no se reconoce» | Algunos Windows 10 no traen winget | Instalador `.msi` de Azure CLI (sección 1) |
 | `'charmap' codec can't encode character '\ufeff'` | `az` en Windows imprime con cp1252 | `source infra/azure/vars.sh`, que define `PYTHONIOENCODING=utf-8` |
 | `mongosh` desde tu PC no conecta (timeout) | Tu IP pública cambió desde que la agregaste al firewall | Vuelve a agregarla (paso 4.3) y quítala al terminar |
 | Un comando falla con rutas tipo `C:/Program Files/Git/...` | Conversión de rutas de Git Bash | `source infra/azure/vars.sh` (define `MSYS_NO_PATHCONV=1`) |

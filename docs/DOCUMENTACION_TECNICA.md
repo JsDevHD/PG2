@@ -3,7 +3,8 @@
 Este documento describe **cómo funciona el sistema por dentro**: arquitectura, modelo de datos y
 cardinalidades, reglas de negocio, seguridad, contratos de la API, flujos entre componentes y
 decisiones de diseño. Describe el comportamiento real del código en el repositorio. No es un manual
-de uso. El sistema está desplegado en Azure: la sección 19 registra cómo se hizo, y la guía para
+de uso: ese es [`MANUAL_USUARIO.md`](MANUAL_USUARIO.md), para docentes y estudiantes, con capturas.
+El sistema está desplegado en Azure: la sección 19 registra cómo se hizo, y la guía para
 repetirlo es [`DESPLIEGUE_AZURE.md`](DESPLIEGUE_AZURE.md).
 
 > Los diagramas están en **Mermaid**. Se ven en GitHub y en la vista previa de Markdown de VS Code
@@ -1699,6 +1700,66 @@ src/
 - Para el estudiante, un proyecto oculto desaparece de los listados. Si tenía abierta una de sus
   páginas, `ProjectGate` muestra "sin acceso".
 
+### 10.3.2 Calificación final en la interfaz (RF-09)
+
+Rediseño del 28 de octubre de 2026, solo en el frontend, después de una prueba de usabilidad con
+6 docentes. 3 no encontraron cómo asignar la calificación final y otro tuvo que desplazarse mucho.
+Varios pusieron una segunda nota parcial creyendo que era la final, y uno dijo que el control se
+veía «transparente», como deshabilitado. La API y las reglas (RN-41 a RN-43) no cambiaron.
+
+**Piezas** (`frontend/src/features/feedback/`):
+
+| Archivo | Qué hace |
+|---|---|
+| `useFinalGradeFlow.ts` | Estado compartido del flujo: a quién se califica (`GradeTarget`), el estado (`none`, `loading`, `error`, `pending`, `graded`), el formulario (react-hook-form + `finalGradeSchema`), la confirmación y el envío. Reutiliza `useAssignFinalGrade` |
+| `FinalGradeBar.tsx` | Barra arriba del historial, antes de la descripción del proyecto: quién se revisa, qué versión está abierta, el indicador («Sin calificación final» o «Calificación final: 4,5», con coma decimal) y el botón **Asignar calificación final**. Con calificación, el botón no se muestra. Si está deshabilitado, el motivo va escrito al lado (sin versiones, consultando, error con *Reintentar*) |
+| `FinalGradePanel.tsx` | Bloque **Calificación final (definitiva)** en el cierre: borde y encabezado `warning`, opacidad completa. Su botón, **Revisar y confirmar**, no envía: abre la confirmación |
+| `ConfirmFinalGradeDialog.tsx` | Diálogo **Confirmar calificación final** sobre el `Dialog` de Radix del proyecto: resumen (estudiante o grupo, proyecto, versión, nota con coma y comentario), advertencia y **Cancelar** / **Confirmar calificación final** |
+| `FeedbackForm.tsx` | Bloque **Comentario y nota parcial**: borde lateral `teacher` y la ayuda «La nota parcial se puede reemplazar con una nueva retroalimentación». El flujo de la nota parcial no cambió |
+
+`VersionHistoryPage` calcula una sola vez a quién se califica (`gradeTargetOf`): el estudiante, todo
+el grupo o el integrante elegido en un proyecto por grupos con calificación individual. Le pasa ese
+mismo objetivo a la barra, al bloque y al diálogo. Al cambiar de estudiante, grupo o integrante, el
+formulario se reinicia.
+
+**Flujo:**
+
+```mermaid
+flowchart TD
+    A[Docente pulsa «Asignar calificación final» en la barra] --> B{¿Formulario vacío?}
+    B -- Sí --> C[Lleva al bloque B y pone el foco en el comentario, sin errores]
+    B -- No --> D{¿Válido?}
+    E[«Revisar y confirmar» en el bloque B] --> D
+    D -- No --> F[Muestra los errores y enfoca el primer campo]
+    D -- Sí --> G[Diálogo de confirmación]
+    G -- Cancelar, Esc o clic fuera --> H[Cierra sin enviar y conserva lo escrito]
+    G -- Confirmar --> I[POST /projects/id/final-grade, una sola vez]
+    I -- 201 --> J[Cierra, aviso «Calificación final registrada», indicador al instante e invalidación]
+    I -- 409 --> K[Sigue abierto: «Este estudiante ya tiene una calificación final registrada.», refresca el estado]
+    I -- Red o 5xx --> L[Sigue abierto: «No se pudo conectar con el servidor. Intenta de nuevo.», permite reintentar]
+```
+
+**Detalles:**
+- **Un solo envío.** Un `useRef` bloquea el segundo clic antes de que React vuelva a pintar el
+  botón; además, el botón se deshabilita y dice «Registrando…». Mientras espera, el diálogo no se
+  cierra (ni con Esc ni con clic fuera).
+- **Después del 201.** `setQueryData` agrega los registros devueltos a la consulta de calificaciones
+  finales para que el indicador cambie al instante. `useAssignFinalGrade` invalida la
+  retroalimentación de la versión y del proyecto, las calificaciones finales y el progreso del
+  curso; el flujo invalida además las versiones del proyecto.
+- **409.** Invalida las calificaciones finales y la retroalimentación del proyecto: la barra y el
+  cierre pasan a mostrar la nota existente. El diálogo cambia **Cancelar** por **Cerrar** y oculta
+  **Confirmar**. En la calificación grupal los textos dicen «grupo» en lugar de «estudiante».
+- **Accesibilidad.** `role="dialog"` (Radix), `aria-modal="true"`, `aria-labelledby` al título,
+  `aria-describedby` a la advertencia. Foco inicial en **Cancelar**, foco atrapado (`FocusScope` de
+  Radix) y foco devuelto al botón que abrió el diálogo. Si ese botón ya no existe (se registró la
+  nota), el foco va al indicador de la barra, que es `aria-live="polite"`.
+- `DialogContent` ahora deja pasar las props de Radix (`onOpenAutoFocus`, `onCloseAutoFocus`,
+  `aria-*`). Los diálogos que ya existían no cambian.
+- **Verificación.** 76/76 pruebas de Vitest y 52 comprobaciones con Playwright en Chrome contra el
+  entorno local: 1280×800 y 360×640, modo oscuro, Esc, clic fuera, foco, error de red simulado, 409
+  real, doble clic (una sola petición) y la calificación de un integrante (envía su `student_id`).
+
 ### 10.4 Mi portafolio
 
 - Carga los cursos y, con `useQueries`, los proyectos de cada uno. Usa las mismas claves de caché
@@ -1821,7 +1882,9 @@ mismo que su endpoint. Un campo numérico vacío se convierte en `undefined` y n
 
 **Accesibilidad e interfaz:**
 - **Mobile first (RNF-03):** usable desde 360 px sin scroll horizontal. Se verificó con Playwright a
-  390 px en las pantallas nuevas (crear proyecto, grupos, historial por grupos y Mi portafolio).
+  390 px en las pantallas nuevas (crear proyecto, grupos, historial por grupos y Mi portafolio), y a
+  360 × 640 en el historial del docente con la calificación final (barra a la vista sin desplazarse
+  y diálogo de confirmación dentro de la pantalla).
 - **Título de pestaña por pantalla** (`useDocumentTitle`, WCAG 2.4.2), por ejemplo
   *"Grupos: Campaña cultural | Seguimiento de Proyectos Gráficos"*.
 - **Áreas táctiles** de al menos 24 px (WCAG 2.5.8). Foco visible. Se respeta
@@ -2060,7 +2123,15 @@ prueba** (sección 19.6, paso 3).
 | Projects Service | pytest | 83 (incluye `test_groups.py`, y `test_project_management.py`: edición, bloqueo de la estructura, proyectos ocultos y eliminación) |
 | Feedback Service | pytest | 39 (incluye `test_group_feedback.py`: visibilidad en el grupo, los dos modos de calificación y proyectos ocultos) |
 | Export Service | pytest (incluye el generador de PDF con datos planos) | 34 (incluye `test_portfolio.py`: PDF por grupos, portafolio académico y proyectos ocultos) |
-| Frontend | Vitest + Testing Library + MSW (mock de la API) | 76 (incluye `groups.test.tsx`, `projectManagement.test.tsx`, `theme.test.tsx` y el registro sin rol en `auth.test.tsx`) |
+| Frontend | Vitest + Testing Library + MSW (mock de la API) | 76 (incluye `groups.test.tsx`, `projectManagement.test.tsx`, `theme.test.tsx` y el registro sin rol en `auth.test.tsx`; las de calificación final siguen el flujo con confirmación de la sección 10.3.2) |
+
+> **Última ejecución completa: 18 de octubre de 2026.**
+> - Backend: **176 de 176** pruebas pasaron, sin advertencias.
+> - Frontend: **76 de 76**. Se volvió a correr el 28 de octubre, con el rediseño de la
+>   calificación final: **76 de 76**.
+>
+> El resultado, la duración y el contexto de cada prueba del backend están en
+> [`RESULTADOS_PRUEBAS.md`](RESULTADOS_PRUEBAS.md).
 
 Las pruebas de backend usan MongoDB real (base `graphic_tracker_test`, vaciada antes y después de
 cada prueba) y simulan Blob Storage y Auth. Cubren:
@@ -2153,7 +2224,7 @@ cd frontend && pnpm test && pnpm check && pnpm build
 | RF-06 | Historial de retroalimentación | `feedback.py :: list_version_feedback, list_project_feedback`. `FeedbackThread.tsx` |
 | RF-07 | Exportar portafolio en PDF (por proyecto y académico) | `Export_Service/app/api/v1/export.py`, `portfolio.py`, `core/portfolio.py`, `core/pdf_builder.py`. `ExportButton.tsx`, `PortfolioPage.tsx` |
 | RF-08 | Progreso | `Projects_Service/app/api/v1/progress.py`. `TeacherProgressPage.tsx`, paneles |
-| RF-09 | Calificación final (por estudiante o por grupo) | `feedback.py :: create_final_grade, list_final_grades`. `FinalGradePanel.tsx` |
+| RF-09 | Calificación final (por estudiante o por grupo) | `feedback.py :: create_final_grade, list_final_grades`. `useFinalGradeFlow.ts`, `FinalGradeBar.tsx`, `FinalGradePanel.tsx` y `ConfirmFinalGradeDialog.tsx` (sección 10.3.2) |
 | RF-10 | Registro | `auth.py :: register`. `RegisterPage.tsx` |
 | Gestión de proyectos | Editar, ocultar o mostrar, y eliminar proyectos sin versiones | `Projects_Service/app/api/v1/projects.py`, `access.py :: get_member_project`; ocultos en `Feedback_Service/app/api/deps.py` y `Export_Service/app/api/v1/export.py`, `portfolio.py`. `features/courses/ProjectActions.tsx`, `CreateProjectPage.tsx :: EditProjectPage` |
 | Grupos | Proyectos por grupos: configuración, formación con plazo, versiones del grupo y calificación individual o grupal | `Projects_Service/app/api/v1/groups.py`, `models/group.py`. `Feedback_Service/app/models/projects.py`. `features/projects/GroupsPage.tsx`, `lib/groups.ts`, `CreateProjectPage.tsx` |
@@ -2185,8 +2256,12 @@ cd frontend && pnpm test && pnpm check && pnpm build
 ├── infra/azure/           # vars.sh (variables del despliegue); secretos.sh y .trabajo/ no se suben
 ├── docs/
 │   ├── DOCUMENTACION_TECNICA.md   # este documento
+│   ├── MANUAL_USUARIO.md          # manual de uso para docentes y estudiantes, con capturas
 │   ├── DESPLIEGUE_AZURE.md        # paso a paso para Azure
+│   ├── INFORME_DESPLIEGUE_AZURE.md  # resultados, problemas, porqué de cada comando y otros ambientes
+│   ├── RESULTADOS_PRUEBAS.md      # ejecución de las 176 pruebas del backend, con el contexto de cada una
 │   ├── img/azure/                 # capturas del despliegue (sección 19.7)
+│   ├── img/manual/                # capturas del manual de usuario
 │   └── MOCKUPS/                   # Diseños de referencia de las pantallas
 └── docker-compose.yml     # Sistema completo en local
 ```
@@ -2206,7 +2281,10 @@ Esta sección registra **el despliegue que se hizo realmente**:
 - las actualizaciones publicadas después (19.13).
 
 Para repetirlo desde cero en otra suscripción, la guía genérica es
-[`DESPLIEGUE_AZURE.md`](DESPLIEGUE_AZURE.md). Ya incluye todo lo aprendido aquí.
+[`DESPLIEGUE_AZURE.md`](DESPLIEGUE_AZURE.md), que ya incluye todo lo aprendido aquí. Los
+resultados, la cronología, los 17 problemas con su causa, el porqué de cada comando y cómo
+adaptarlo a otro ambiente están en el informe
+[`INFORME_DESPLIEGUE_AZURE.md`](INFORME_DESPLIEGUE_AZURE.md).
 
 - **Fecha:** 16 de octubre de 2026, entre las 21:30 y las 22:10 (hora de Colombia).
 - **Suscripción:** cuenta gratuita de Azure (crédito de US$200) llamada *Azure subscription 1*.
@@ -2813,6 +2891,7 @@ atrás si hace falta.
 |---|---|---|---|---|
 | 16 oct 2026 | Los cinco | `v1` | Despliegue inicial | Secciones 19.6 y 19.7 |
 | 17 oct 2026 | frontend | `v2` | Registro: si no se elige rol, el formulario mostraba el mensaje por defecto de Zod en inglés (*Expected 'estudiante' \| 'docente', received null*). | Prueba nueva en `tests/auth.test.tsx` (76/76 pasan) y prueba en vivo en Azure |
+| 28 oct 2026 | frontend | `v3` | Rediseño de la calificación final: barra arriba del historial con estado y acceso, bloques separados para la nota parcial y la final, y diálogo de confirmación (sección 10.3.2). Sin cambios en la API | 76/76 en Vitest, 52 comprobaciones con Playwright en local y textos nuevos presentes en el bundle publicado |
 
 **Causa y arreglo del cambio `v2`.** Con ningún radio marcado, react-hook-form entrega `null`, no
 `undefined`. `required_error` de Zod solo cubre `undefined`, así que se mostraba el error de tipo
@@ -2846,4 +2925,35 @@ Para volver a la versión anterior, si algo fallara:
 
 ```bash
 az containerapp update -n frontend -g "$RG" --image "$ACR_SERVER/frontend:v1"
+```
+
+**Cambio `v3`: rediseño de la calificación final.** Lo que cambió y por qué está en la sección
+10.3.2. Antes de publicar se verificó en local: `pnpm run build` sin errores, Biome limpio, 76/76
+pruebas de Vitest (3 se actualizaron al flujo con confirmación) y 52 comprobaciones con Playwright
+(`infra/azure/.trabajo/shots/verif_calificacion.mjs`, con datos desechables).
+
+Comandos ejecutados (build de 27 s y actualización de 21 s):
+
+```bash
+source infra/azure/vars.sh
+TAG=v3
+docker build --platform linux/amd64 -t "$ACR_SERVER/frontend:$TAG" frontend
+az acr login -n "$ACR"
+docker push "$ACR_SERVER/frontend:$TAG"
+az containerapp update -n frontend -g "$RG" --image "$ACR_SERVER/frontend:$TAG"
+
+az containerapp revision list -n frontend -g "$RG" \
+  --query "[].{rev:name, active:properties.active, traffic:properties.trafficWeight, image:properties.template.containers[0].image}" -o table
+# frontend--0000001  True  0    acrgraficosjs2026.azurecr.io/frontend:v2
+# frontend--0000002  True  100  acrgraficosjs2026.azurecr.io/frontend:v3
+```
+
+En Azure se comprobó que el JavaScript publicado ya trae los textos nuevos, como «Revisar y
+confirmar». El recorrido con inicio de sesión se hizo
+en local, porque en el entorno publicado no se escriben contraseñas desde la automatización.
+
+Para volver a la versión anterior, si algo fallara:
+
+```bash
+az containerapp update -n frontend -g "$RG" --image "$ACR_SERVER/frontend:v2"
 ```
