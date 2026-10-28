@@ -4,10 +4,12 @@ Este manual explica, paso a paso y con capturas de pantalla, cómo usar la plata
 parte común (crear la cuenta, entrar, moverse por la aplicación), una parte para el **docente** y
 otra para el **estudiante**. Al final hay preguntas frecuentes y una guía de los mensajes de error.
 
-> **Sobre las imágenes.** Las capturas se tomaron el 20 de octubre de 2026 con datos de ejemplo:
-> las personas, cursos y trabajos que aparecen son ficticios. Las del historial y la calificación
-> final (17 a 21, 23 y 25 a 28) se actualizaron el 28 de octubre, con el rediseño de ese flujo. Los
-> **recuadros rojos numerados** señalan los elementos que explica el texto que sigue a cada imagen.
+> **Sobre las imágenes.** Las capturas se tomaron el 28 de octubre de 2026, con la versión publicada
+> ese día (rediseño de la calificación final), y con datos de ejemplo: las personas, cursos y
+> trabajos que aparecen son ficticios. Tres son del 20 de octubre porque muestran acciones que solo
+> se hacen una vez: crear el curso, unirse a él y subir una versión. Esas pantallas no cambiaron.
+> Los **recuadros rojos numerados** señalan los elementos que explica el texto que sigue a cada
+> imagen.
 
 **¿Cómo entrar?** Abre en el navegador la dirección que te compartió tu institución. En el
 despliegue actual del proyecto es
@@ -364,10 +366,19 @@ final** dice a quién estás revisando, qué versión tienes abierta y **Sin cal
 > ese estudiante **ya no puede subir más versiones** en el proyecto. Calificar a un estudiante no
 > bloquea a sus compañeros.
 
-Si la ventana muestra un error, sigue abierta para que reintentes o canceles: **No se pudo conectar
-con el servidor** (revisa la conexión y vuelve a confirmar) o **Este estudiante ya tiene una
-calificación final registrada** (se registró antes desde otra pestaña o sesión: cierra la ventana y
-la barra ya muestra la nota).
+Si la ventana muestra un error, sigue abierta para que reintentes o canceles:
+
+- **No se pudo conectar con el servidor. Intenta de nuevo.** No se registró nada. Revisa la
+  conexión y vuelve a pulsar **Confirmar calificación final**.
+- **Este estudiante ya tiene una calificación final registrada.** Alguien la registró antes, desde
+  otra pestaña o sesión, y no se puede asignar dos veces:
+
+![La calificación final ya estaba registrada](img/manual/29_docente_calificacion_ya_registrada.png)
+
+| # | Elemento | Para qué sirve |
+|---|---|---|
+| 1 | **Mensaje de error** | Explica por qué no se registró la calificación |
+| 2 | **Cerrar** | En este caso **Confirmar** desaparece y **Cancelar** pasa a llamarse **Cerrar**. Al cerrar, la barra ya muestra la nota que estaba registrada |
 
 Si el botón de la barra está desactivado, el motivo aparece escrito al lado; por ejemplo, cuando el
 estudiante todavía no ha subido versiones.
