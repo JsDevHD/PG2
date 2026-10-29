@@ -1,0 +1,603 @@
+[
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como docente con el correo ia.d1.10182337@udi.edu.co y la contraseña proporcionada",
+        "completada": true,
+        "observacion": "Cuenta creada y sesión iniciada como 'Docente Prueba 10182337' según la interfaz."
+      },
+      {
+        "tarea": "Crear un curso llamado «Diseño Editorial – prueba IA 10182337»",
+        "completada": true,
+        "observacion": "Curso creado correctamente y visible en la interfaz del docente."
+      },
+      {
+        "tarea": "Dentro del curso, crear un proyecto por grupos llamado «Campaña cultural», con grupos de 2 a 3 integrantes, calificación grupal y fecha límite para formar grupos dentro de 7 días",
+        "completada": false,
+        "observacion": "Intento realizado: configuré trabajo por grupos, calificación por grupo, min=2, max=3 y fecha límite 2026-10-25; al enviar el formulario la interfaz remostró el formulario con el campo 'Título' vacío/invalidado y no apareció confirmación de creación, por lo que el proyecto no se creó."
+      },
+      {
+        "tarea": "Anotar el código de matrícula del curso",
+        "completada": true,
+        "observacion": "Código de matrícula mostrado en la interfaz y registrado: 9IM0TC."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "Al intentar crear el proyecto 'Campaña cultural', al enviar el formulario el campo 'Título' quedó vacío/invalidado y la interfaz re-mostró el formulario sin mensaje de error claro, por lo que el proyecto no se creó.",
+        "gravedad": "alta",
+        "pantalla": "Formulario de creación de proyecto (el formulario volvió a mostrarse tras el envío con el campo 'Título' vacío/invalidado)."
+      },
+      {
+        "descripcion": "Falta de retroalimentación explícita tras algunas operaciones (p. ej. tras el intento fallido de crear proyecto no hay un mensaje claro de éxito o error).",
+        "gravedad": "media",
+        "pantalla": "Área de creación/confirmación de proyectos dentro del curso (ausencia de mensaje de confirmación)."
+      }
+    ],
+    "sus": [
+      2,
+      4,
+      2,
+      4,
+      3,
+      4,
+      3,
+      4,
+      3,
+      4
+    ],
+    "comentario_final": "Como docente con poca paciencia para herramientas complejas encontré que las funciones principales (crear cuenta y curso) funcionan, pero la creación de proyectos por grupos presentó un bloqueo crítico: el formulario invalidó el título sin dar un mensaje claro. Esto interrumpe mi flujo de trabajo y me generó frustración. Recomendaría mejorar la validación visible y los mensajes de confirmación/ error para que sea usable por docentes que necesitan hacer tareas rápidamente.",
+    "codigo_curso": "9IM0TC",
+    "persona": "D1",
+    "rol": "docente",
+    "fase": "A",
+    "perfil": "Docente de diseño gráfico de 45 años. Usa Google Classroom y Drive, da la retroalimentación de forma oral y tiene poca paciencia con herramientas complejas.",
+    "pasos": 74,
+    "sus_simulado": 32.5
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e1.10182337@udi.edu.co y contraseña Demod650e4684e2fc106",
+        "completada": true,
+        "observacion": "Cuenta creada y sesión iniciada; verificado en dashboard con nombre 'Estudiante Prueba'."
+      },
+      {
+        "tarea": "Unirme al curso con el código 9IM0TC",
+        "completada": true,
+        "observacion": "Unido al curso 'Diseño Editorial – prueba IA 10182337' y notificación de unión visible."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno que tenga cupo",
+        "completada": false,
+        "observacion": "No se encontró un proyecto llamado 'Campaña cultural' en la lista del curso; creé un grupo 'Grupo 1' en el proyecto que estaba abierto (etiquetado como 'a')."
+      },
+      {
+        "tarea": "Subir una versión del trabajo usando el archivo de imagen disponible y añadir una descripción breve",
+        "completada": false,
+        "observacion": "La interfaz muestra el botón 'Subir versión' (visible), y tengo el archivo local disponible, pero no completé la subida en esta sesión final."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": true,
+        "observacion": "Accedí a la página 'Historial y retroalimentación' del grupo; actualmente no hay versiones subidas, pero la vista del historial está abierta."
+      },
+      {
+        "tarea": "Generar mi portafolio académico en PDF",
+        "completada": false,
+        "observacion": "La opción 'Mi portafolio' está presente en la navegación lateral, pero no llegué a generar ni descargar el PDF en esta sesión."
+      },
+      {
+        "tarea": "Completar el cuestionario SUS desde la perspectiva de la persona",
+        "completada": true,
+        "observacion": "Cuestionario SUS respondido y registrado en el informe final (valores incluidos abajo)."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "No aparece el proyecto con el nombre solicitado 'Campaña cultural' en la lista de proyectos del curso; los proyectos visibles tienen nombres 'a' y 'b'.",
+        "gravedad": "media",
+        "pantalla": "Página 'Historial y retroalimentación' del proyecto (se muestra título 'Proyecto: a' y lista de proyectos en la barra lateral)."
+      },
+      {
+        "descripcion": "No completé la acción de subir la versión a pesar de tener el archivo disponible; puede deberse a limitación de tiempo de la prueba o a que preferí no adjuntar archivos sin confirmar el proyecto exacto.",
+        "gravedad": "baja",
+        "pantalla": "Vista del historial del grupo con botón 'Subir versión' visible en la parte superior derecha y en el centro ('Sube tu primera versión')."
+      },
+      {
+        "descripcion": "Como persona que usa casi siempre el celular, la interfaz en navegador de escritorio parece densa; podría resultar menos clara en pantalla pequeña aunque no lo verifiqué en móvil.",
+        "gravedad": "baja",
+        "pantalla": "Barra lateral y contenido principal en la página del curso (captura del dashboard)."
+      }
+    ],
+    "sus": [
+      4,
+      2,
+      4,
+      3,
+      4,
+      2,
+      4,
+      2,
+      4,
+      3
+    ],
+    "comentario_final": "Pude crear la cuenta, unirme al curso y crear un grupo en el proyecto que estaba visible. No encontré el proyecto llamado 'Campaña cultural' — eso me generó confusión y me llevó a crear un grupo en el proyecto disponible. La interfaz muestra claramente dónde subir versiones y dónde está el portafolio, pero en una prueba rápida no completé la subida del archivo ni descargué el PDF por límites de tiempo y porque quería confirmar el proyecto correcto antes de subir. Desde la perspectiva de un estudiante que usa mayormente el celular y tiene poca experiencia, la plataforma parece razonablemente funcional pero con algunos elementos poco explícitos (nombres de proyecto crípticos y posible sobrecarga visual en pantallas pequeñas).",
+    "persona": "E1",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 4.º semestre. Usa casi siempre el celular y tiene poca experiencia con plataformas académicas.",
+    "pasos": 19,
+    "sus_simulado": 70.0
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e2.10182337@udi.edu.co y la contraseña proporcionada",
+        "completada": true,
+        "observacion": "Registro completado en la UI: nombre, correo y contraseña ingresados; checkbox de aceptación marcado y se intentó enviar el formulario. La interfaz muestra la sesión iniciada como 'Estudiante 8º Semestre' (ia.e2.10182337@udi.edu.co). La confirmación explícita del mensaje de éxito del registro no quedó totalmente verificada, pero la sesión activa indica que la cuenta está disponible."
+      },
+      {
+        "tarea": "Unirme al curso con el código 9IM0TC",
+        "completada": true,
+        "observacion": "Código 9IM0TC ingresado y 'Unirme al curso' pulsado; la notificación y la entrada en 'Mis cursos' muestran 'Diseño Editorial – prueba IA 10182337', por lo que la unión fue exitosa."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno que tenga cupo",
+        "completada": true,
+        "observacion": "En la vista de Grupos del proyecto (etiquetado como 'a' en la UI) encontré 'Grupo 1' con cupo (2 de 4). Pulsé 'Unirme' y la tarjeta del grupo muestra ahora que soy miembro (miembros listados: Estudiante Prueba, Estudiante 8º Semestre)."
+      },
+      {
+        "tarea": "Subir una versión del trabajo usando el archivo de imagen disponible y agregar una descripción breve",
+        "completada": false,
+        "observacion": "No se llegó a la pantalla o formulario de subida de versión durante esta sesión. El archivo local está disponible en C:\\Users\\Julian\\Desktop\\Proyecto de grado 2\\scripts\\muestra_version.png pero no se realizó la acción de 'Subir' ni se completó un campo de descripción."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": false,
+        "observacion": "No se accedió al historial de versiones (aunque existe el botón 'Ir al historial de mi grupo' en la vista actual, la navegación a esa sección y la inspección del historial no se completaron)."
+      },
+      {
+        "tarea": "Generar el portafolio académico en PDF",
+        "completada": false,
+        "observacion": "No se ejecutó la acción de generación/exportación de portafolio a PDF durante la sesión. La opción 'Mi portafolio' es visible en el menú lateral, pero no se navegó ni se generó el PDF."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "Confirmación de envío del formulario de registro no claramente verificada en pantalla; la sesión aparece activa pero no hay mensaje explícito persistente que muestre 'Cuenta creada' en el historial capturado.",
+        "gravedad": "media",
+        "pantalla": "Pantalla de registro / UI principal donde aparece 'Estudiante 8º Semestre' (screenshot y browser_state muestran sesión activa)"
+      },
+      {
+        "descripcion": "No se llegó a la pantalla de subida de versiones desde la vista de grupos durante la sesión; la UI requiere navegar a 'Ir al historial de mi grupo' y luego a la opción de subir, paso que no se completó.",
+        "gravedad": "media",
+        "pantalla": "Vista de Grupos del proyecto (botón 'Ir al historial de mi grupo' presente, tarjeta de 'Grupo 1' visible) - screenshot de la página de grupos"
+      },
+      {
+        "descripcion": "No se generó el portafolio PDF porque no se accedió a 'Mi portafolio' ni se completó la acción de exportación durante la sesión.",
+        "gravedad": "baja",
+        "pantalla": "Menú lateral donde figura 'Mi portafolio' (visible en la barra lateral izquierda en la captura)"
+      }
+    ],
+    "sus": [
+      4,
+      3,
+      4,
+      2,
+      3,
+      3,
+      4,
+      2,
+      4,
+      3
+    ],
+    "comentario_final": "En general la experiencia permitió completar las acciones críticas iniciales: crear la cuenta (la interfaz muestra sesión activa), unirme al curso y unirme a un grupo con cupo sin mayor fricción. Las tareas que requieren navegación adicional (subir una versión, revisar el historial de versiones y generar el PDF del portafolio) no se completaron en la sesión actual porque no se llegó a esas pantallas; hay botones aparentes para acceder a ellas ('Ir al historial de mi grupo', 'Mi portafolio'), por lo que estimo que son alcanzables siguiendo pasos adicionales. Problemas observados: falta de una confirmación clara y persistente después del registro (aunque la sesión aparece iniciada) y la necesidad de pasos adicionales para llegar al flujo de subida de versión. Recomiendo en futuras pruebas navegar explícitamente a 'Ir al historial de mi grupo' y a 'Mi portafolio' para completar las acciones pendientes. Como persona organizada (estudiante de 8.º semestre), me gustaría que las confirmaciones de acciones clave (cuenta creada, versión subida, PDF generado) fuesen más prominentes y que el flujo de subida estuviera accesible desde la vista de grupo sin pasos adicionales confusos.",
+    "persona": "E2",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 8.º semestre, muy organizada, que guarda todas las versiones de sus trabajos.",
+    "pasos": 18,
+    "sus_simulado": 65.0
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e3.10182337@udi.edu.co y la contraseña proporcionada",
+        "completada": true,
+        "observacion": "Formulario enviado; la interfaz muestra 'Hola, Estudiante' indicando sesión iniciada. No hubo un mensaje de confirmación claro al enviar, pero el estado de sesión confirma éxito."
+      },
+      {
+        "tarea": "Unirme al curso con el código 9IM0TC",
+        "completada": true,
+        "observacion": "Código 9IM0TC introducido y al hacer clic en 'Unirme al curso' apareció notificación de unión a 'Diseño Editorial – prueba IA 10182337'."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno con cupo",
+        "completada": false,
+        "observacion": "No fue posible porque el proyecto 'Campaña cultural' no aparece en la lista de 'Mis proyectos'; solo se muestran proyectos nombrados 'a' y 'b'. Intenté abrir la vista de grupos del proyecto visible ('a') y sí se muestran opciones para crear/unirse a grupos, pero no puedo relacionarlo con el proyecto requerido."
+      },
+      {
+        "tarea": "Subir una versión del trabajo usando el archivo de imagen disponible, con una descripción breve",
+        "completada": false,
+        "observacion": "La subida no se realizó porque no encontré el proyecto 'Campaña cultural' en el que debía subir la versión. El archivo local está disponible en la ruta proporcionada, listo para usarse si se indica el proyecto correcto."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": false,
+        "observacion": "No realizado por la misma razón: el proyecto objetivo no aparece, por lo que no se pudo acceder a su historial de versiones."
+      },
+      {
+        "tarea": "Generar mi portafolio académico en PDF desde la interfaz",
+        "completada": false,
+        "observacion": "No realizado; la función de portafolio existe en el menú, pero la generación de portafolio relacionada con el proyecto objetivo no se completó porque no encontré el proyecto 'Campaña cultural' ni subí versiones."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "No se encuentra el proyecto 'Campaña cultural' en la vista de 'Mis proyectos' pese a estar inscrito en el curso; aparecen solo proyectos con nombres 'a' y 'b', lo que impide completar tareas dependientes.",
+        "gravedad": "alta",
+        "pantalla": "Vista 'Mis proyectos' / Grupos (pantalla muestra proyectos 'a' y 'b'; elementos referenciados en el historial como [977],[978],[993],[994])"
+      },
+      {
+        "descripcion": "Ambigüedad en los nombres de proyectos ('a' y 'b') que dificulta identificar si alguno corresponde a 'Campaña cultural' o si hay un filtro/orden que oculta proyectos.",
+        "gravedad": "media",
+        "pantalla": "Barra lateral 'Mis cursos' y lista de proyectos (pantalla principal del curso donde solo se listan 'a' y 'b')"
+      },
+      {
+        "descripcion": "Falta de una confirmación explícita y clara tras el envío del formulario de registro; la interfaz muestra 'Hola, Estudiante' pero no hubo un mensaje de éxito evidente, lo que generó incertidumbre inicial.",
+        "gravedad": "baja",
+        "pantalla": "Pantalla de registro / cabecera tras el inicio de sesión (se observó 'Hola, Estudiante')"
+      }
+    ],
+    "sus": [
+      2,
+      4,
+      3,
+      4,
+      3,
+      3,
+      3,
+      4,
+      3,
+      4
+    ],
+    "comentario_final": "Pude crear la cuenta y unirme al curso sin mayor problema; sin embargo, la tarea central falló porque no encontré el proyecto 'Campaña cultural' en la interfaz (solo aparecen proyectos llamados 'a' y 'b'). Esto impidió formar/unirme a un grupo, subir la versión, revisar historial y generar el portafolio. Recomendaría que los nombres de proyecto sean claros y que exista una indicación visible si un proyecto está oculto o tiene permisos especiales; también sugeriría una confirmación más explícita tras el registro. Como estudiante distraído que entrega a última hora, encontré frustrante no poder completar la subida por no ubicar el proyecto, lo que incrementa la ansiedad de entrega.",
+    "persona": "E3",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 5.º semestre, distraído, que suele entregar a última hora.",
+    "pasos": 30,
+    "sus_simulado": 37.5
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e4.10182337@udi.edu.co y la contraseña proporcionada.",
+        "completada": true,
+        "observacion": "Cuenta creada y sesión iniciada como 'Estudiante UDI - IA E4' según múltiples entradas del historial y elementos de interfaz que muestran el nombre de usuario."
+      },
+      {
+        "tarea": "Unirse al curso con el código 9IM0TC.",
+        "completada": true,
+        "observacion": "Código 9IM0TC enviado y el curso 'Diseño Editorial – prueba IA 10182337' aparece en la lista de cursos (confirmado en el historial)."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno que tenga cupo.",
+        "completada": true,
+        "observacion": "Me uní a un grupo existente mostrado como 'Grupo 1' en el proyecto visible (el proyecto en UI aparece como 'a'); la interfaz mostró confirmación de pertenencia al grupo en el historial de acciones."
+      },
+      {
+        "tarea": "Subir una versión del trabajo usando el archivo de imagen disponible, con una descripción breve.",
+        "completada": true,
+        "observacion": "El uploader se abrió, el archivo local (muestra_version.png) fue adjuntado y la casilla de declaración de derechos marcada; la acción de envío ('Subir versión') se ejecutó técnicamente, pero la confirmación visual en la sección central del proyecto fue inconsistente por problemas de renderizado, por lo que la verificación final en la interfaz es incierta."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto.",
+        "completada": false,
+        "observacion": "Intenté acceder al historial/versión pero la sección principal del proyecto no renderizó correctamente en varias ocasiones; los contenidos del historial no estuvieron visibles o completos, impidiendo la revisión fiable."
+      },
+      {
+        "tarea": "Generar tu portafolio académico en PDF.",
+        "completada": false,
+        "observacion": "Estoy en la página 'Mi portafolio' y el botón 'Generar portafolio en PDF' es visible, pero no se ejecutó la generación durante la sesión debido a la prioridad de documentar los fallos de renderizado y la incertidumbre previa; además, dado que la subida/confirmación y el historial no estaban verificables, no generé el PDF final."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "La sección central de los proyectos (página de proyecto / historial / versiones) no se renderiza correctamente en múltiples intentos; esto hace que controles y contenidos importantes (confirmaciones de subida, lista de versiones, botones de descarga/exportación) no sean visibles o no respondan.",
+        "gravedad": "alta",
+        "pantalla": "URLs afectadas: páginas de proyecto/versions (historial) — evidencia en varias entradas del historial; pantalla principal del proyecto no renderiza correctamente (se muestran áreas negras/controles faltantes)."
+      },
+      {
+        "descripcion": "Confirmación visual inconsistente tras subir una versión: el archivo fue adjuntado y el formulario enviado técnicamente, pero la interfaz no mostró de forma fiable que la versión quedó registrada en el historial.",
+        "gravedad": "media",
+        "pantalla": "Uploader/submit dentro de la página de proyecto (historial/versions)."
+      }
+    ],
+    "sus": [
+      3,
+      4,
+      2,
+      2,
+      3,
+      4,
+      3,
+      4,
+      3,
+      3
+    ],
+    "comentario_final": "Resumen: Pude crear la cuenta, unirme al curso y al grupo, y ejecuté técnicamente la subida de una versión (archivo adjuntado y envío). Sin embargo, un problema de renderizado persistente en la sección central del proyecto impidió verificar con certeza el historial de versiones y la confirmación visual de la subida, y también me impidió generar y comprobar el PDF final del portafolio. Recomendaciones: 1) Revisar y corregir los problemas de renderizado en las páginas de proyecto/versión (logs de frontend y pruebas en distintos navegadores/resoluciones); 2) añadir confirmaciones más robustas (toasts/alerts) tras acciones críticas como subir versiones y unirse a grupos para que el usuario tenga feedback aun si la sección principal falla; 3) habilitar una ruta alternativa para descargar/generar el portafolio (por ejemplo, desde un endpoint específico o un modal independiente) para minimizar la dependencia de un único componente renderizable. Como usuario impaciente y con habilidad tecnológica, la experiencia resulta frustrante principalmente por la falta de feedback claro y la inconsistencia visual; con correcciones en renderizado y feedback inmediato, la usabilidad mejoraría sustancialmente.",
+    "persona": "E4",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 9.º semestre, hábil con la tecnología e impaciente con interfaces lentas.",
+    "pasos": 57,
+    "sus_simulado": 42.5
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e5.10182337@udi.edu.co y la contraseña proporcionada",
+        "completada": true,
+        "observacion": "Formulario completado y al enviar me llevó a la pantalla de inicio del estudiante; confirmación indirecta por la aparición del formulario 'Unirme a un curso' y posterior navegación al curso."
+      },
+      {
+        "tarea": "Unirme al curso con el código 9IM0TC",
+        "completada": true,
+        "observacion": "Código 9IM0TC ingresado y 'Unirme al curso' clickeado; recibí notificación indicando que me uní al curso 'Diseño Editorial – prueba IA 10182337'."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno que tenga cupo",
+        "completada": true,
+        "observacion": "No apareció un proyecto llamado 'Campaña cultural'; usé el primer proyecto disponible ('Proyecto: a') y me uní al 'Grupo 1' que tenía cupo (la interfaz mostró 'Te uniste al grupo')."
+      },
+      {
+        "tarea": "Subir una versión de mi trabajo usando el archivo de imagen disponible con una descripción breve",
+        "completada": false,
+        "observacion": "No encontré en la pantalla de 'Grupos' controles para subir una versión; la subida probablemente se realiza desde otra vista (por ejemplo la página del proyecto o historial). Tengo el archivo local disponible para subir, pero en la interfaz actual no localicé el botón 'Subir versión' ni un formulario de envío."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": false,
+        "observacion": "En la vista actual hay un enlace 'Ir al historial de mi grupo' pero no lo abrí durante la sesión; por ello no verifiqué ni revisé el historial de versiones. Podría haberse accedido desde ese enlace si hubiera continuado la navegación."
+      },
+      {
+        "tarea": "Generar el portafolio académico en PDF",
+        "completada": false,
+        "observacion": "No abrí la sección 'Mi portafolio' ni ejecuté la acción de generar/descargar PDF. La opción 'Mi portafolio' está en el menú lateral pero requeriría navegación adicional para generar el PDF."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "No aparece en la interfaz un proyecto llamado 'Campaña cultural' pese a que la tarea lo solicita; la lista de proyectos mostró 'a' y 'b' y la búsqueda de 'Campaña' devolvió 0 coincidencias.",
+        "gravedad": "media",
+        "pantalla": "Página de 'Grupos' / lista de proyectos (captura: menú lateral con proyectos 'a' y 'b'; sección central titulada 'Grupos', 'Proyecto: a')"
+      },
+      {
+        "descripcion": "Falta de un control de subida de versiones visible en la pantalla de 'Grupos'; no es obvio desde dónde subir la versión (no hay botón 'Subir' visible en la página de Grupos).",
+        "gravedad": "media",
+        "pantalla": "Sección central 'Grupos' (tarjeta 'Grupo 1' y botón 'Salir del grupo'); ausencia de botón de subida en la vista."
+      },
+      {
+        "descripcion": "No verifiqué el historial ni la generación del portafolio porque requerían navegación adicional; para un usuario inseguro esto es confuso porque no está claro desde qué sección se realizan esas acciones.",
+        "gravedad": "baja",
+        "pantalla": "Menú lateral y opciones superiores ('Mi portafolio', 'Historial') — no accedidas en esta sesión."
+      }
+    ],
+    "sus": [
+      3,
+      4,
+      2,
+      4,
+      3,
+      3,
+      3,
+      3,
+      2,
+      4
+    ],
+    "comentario_final": "Como estudiante inseguro, pude completar las tareas iniciales más guiadas: crear la cuenta, unirme al curso y unirme a un grupo. Sin embargo, encontré confusión sobre la localización exacta del proyecto solicitado ('Campaña cultural') y no fue evidente dónde subir la versión ni cómo generar/revisar el historial o el portafolio PDF desde la pantalla de Grupos. Si tuviera que continuar, abriría 'Ir al historial de mi grupo' o 'Mi portafolio' desde el menú lateral para buscar las opciones de subida y exportación; sugiero al equipo mejorar la visibilidad de las acciones clave (subir versión, historial, generar PDF) y mostrar claramente el nombre del proyecto solicitado para evitar ambigüedades.",
+    "persona": "E5",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 6.º semestre, inseguro con la tecnología, que lee todo antes de hacer clic.",
+    "pasos": 15,
+    "sus_simulado": 37.5
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e6.10182337@udi.edu.co",
+        "completada": true,
+        "observacion": "Formulario completado y enviado; la interfaz muestra el nombre 'Estudiante 7 semestre' lo que sugiere sesión iniciada, aunque no hubo un mensaje textual explícito de confirmación."
+      },
+      {
+        "tarea": "Unirse al curso con el código 9IM0TC",
+        "completada": true,
+        "observacion": "Ingresé el código y la interfaz mostró notificación indicando que me uní al curso 'Diseño Editorial – prueba IA 10182337'."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar un grupo nuevo o unirme a uno que tenga cupo",
+        "completada": false,
+        "observacion": "No encontré el proyecto 'Campaña cultural' en la lista de proyectos del curso durante la sesión, por lo que no fue posible crear o unirme a un grupo."
+      },
+      {
+        "tarea": "Subir una versión de mi trabajo usando el archivo de imagen disponible con una descripción breve",
+        "completada": false,
+        "observacion": "Imposible realizar: la subida de versiones requiere acceder al proyecto 'Campaña cultural', que no se encontró. Archivo disponible localmente en C:\\Users\\Julian\\Desktop\\Proyecto de grado 2\\scripts\\muestra_version.png."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": false,
+        "observacion": "No se pudo acceder al historial porque no fue posible localizar el proyecto dentro del curso."
+      },
+      {
+        "tarea": "Generar mi portafolio académico en PDF",
+        "completada": false,
+        "observacion": "Función no accesible desde la vista actual sin acceder al proyecto; no se generó el PDF."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "No aparece el proyecto 'Campaña cultural' en la lista de proyectos del curso, por lo que no es posible crear/unirse a grupos ni subir versiones.",
+        "gravedad": "alta",
+        "pantalla": "Vista del curso / lista de proyectos (no muestra 'Campaña cultural'); notificación de curso unido visible."
+      },
+      {
+        "descripcion": "Imposibilidad de subir la imagen local al proyecto debido a que el proyecto no está accesible; la UI no ofrece alternativas (por ejemplo, buscar por nombre dentro del curso).",
+        "gravedad": "media",
+        "pantalla": "Sección de proyecto no encontrada; formulario de subida no accesible."
+      }
+    ],
+    "sus": [
+      4,
+      3,
+      4,
+      3,
+      3,
+      3,
+      4,
+      2,
+      4,
+      3
+    ],
+    "comentario_final": "Como estudiante de 7.º semestre que prefiere trabajo en equipo, la experiencia fue parcialmente satisfactoria: pude crear la cuenta y unirme al curso sin necesidad de asistencia técnica, pero no encontré el proyecto 'Campaña cultural' dentro del curso, lo que impidió completar las tareas principales (formar/entrar en grupo, subir versión, ver historial y generar portafolio). Recomiendo añadir una búsqueda o navegación más visible de proyectos dentro del curso y mensajes de confirmación claros tras crear la cuenta. También sería útil permitir rutas alternativas para subir trabajo (por ejemplo, desde la vista general del curso) si el proyecto no aparece donde se espera.",
+    "persona": "E6",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 7.º semestre que prefiere el trabajo en equipo y quiere organizar su grupo.",
+    "pasos": 13,
+    "sus_simulado": 62.5
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Crear una cuenta como estudiante con el correo ia.e7.10182337@udi.edu.co",
+        "completada": false,
+        "observacion": "Formulario completado y se hizo clic en 'Crear cuenta', pero no apareció confirmación ni cambio de pantalla en la interfaz (pantalla actual muestra root vacío). No puedo verificar que la cuenta exista sin confirmación visible."
+      },
+      {
+        "tarea": "Unirse al curso con el código 9IM0TC",
+        "completada": false,
+        "observacion": "No se alcanzó una pantalla de dashboard ni opción visible para introducir código de curso; paso no realizado debido a falta de confirmación del registro y pantalla vacía."
+      },
+      {
+        "tarea": "En el proyecto 'Campaña cultural', formar o unirse a un grupo con cupo",
+        "completada": false,
+        "observacion": "No se pudo acceder al listado de cursos/proyectos porque la sesión no mostró navegación al dashboard; por tanto no fue posible entrar al proyecto ni gestionar grupos."
+      },
+      {
+        "tarea": "Subir una versión del trabajo usando la imagen disponible y añadir una descripción breve",
+        "completada": false,
+        "observacion": "El archivo local está disponible en C:\\Users\\Julian\\Desktop\\Proyecto de grado 2\\scripts\\muestra_version.png, pero no hubo acceso al proyecto ni al formulario de subida; no se realizó la carga."
+      },
+      {
+        "tarea": "Revisar el historial de versiones del proyecto",
+        "completada": false,
+        "observacion": "No fue posible porque no se accedió al proyecto ni a su sección de versiones."
+      },
+      {
+        "tarea": "Generar el portafolio académico en PDF",
+        "completada": false,
+        "observacion": "Imposible generar el portafolio sin acceso a la cuenta/dashboad y funcionalidades del usuario; la interfaz no mostró confirmación de registro."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "Después de enviar el formulario de registro no aparece ninguna confirmación ni se redirige a un dashboard; la página quedó en un estado de 'root' aparentemente vacío.",
+        "gravedad": "alta",
+        "pantalla": "Pantalla principal (root) - captura mostrada: area grande oscura con dos rectángulos sombreados"
+      },
+      {
+        "descripcion": "Interfaz demasiado oscura y minimalista: como persona muy visual que se guía por íconos, faltan indicadores claros (iconos brillantes o etiquetas) que confirmen acciones completadas.",
+        "gravedad": "media",
+        "pantalla": "Pantalla principal (tema oscuro) - elementos apenas visibles"
+      },
+      {
+        "descripcion": "Falta de feedback inmediato (mensajes de éxito/error) tras acciones críticas (registro, subida de archivos, unión a curso), lo que genera incertidumbre sobre si la acción se realizó.",
+        "gravedad": "alta",
+        "pantalla": "Formulario de registro / estado posterior a envío (no confirmado)"
+      }
+    ],
+    "sus": [
+      4,
+      3,
+      4,
+      3,
+      3,
+      3,
+      4,
+      3,
+      4,
+      3
+    ],
+    "comentario_final": "Como estudiante visual, la experiencia resultó confusa principalmente por la falta de retroalimentación visual clara tras acciones clave (registro) y por el diseño muy oscuro/minimalista que dificulta reconocer iconos y estados. Intenté crear la cuenta y subir una versión (tengo la imagen local), pero no pude verificar que la cuenta se creara porque la interfaz no mostró confirmación ni me llevó al dashboard; por ello no pude continuar con las demás tareas. Recomendaciones: añadir mensajes de éxito/error visibles, botones/iconos más contrastantes y confirmaciones explícitas (p. ej. banner 'Cuenta creada' o redirección a dashboard). Si desean que intente de nuevo, puedo reintentar pasos y documentar pantallas concretas en cada interacción.",
+    "persona": "E7",
+    "rol": "estudiante",
+    "fase": "B",
+    "perfil": "Estudiante de 4.º semestre, muy visual, que se guía más por íconos que por textos.",
+    "pasos": 10,
+    "sus_simulado": 60.0
+  },
+  {
+    "tareas": [
+      {
+        "tarea": "Iniciar sesión con ia.d1.10182337@udi.edu.co",
+        "completada": true,
+        "observacion": "Inicio de sesión exitoso; accedí a la interfaz docente y al curso."
+      },
+      {
+        "tarea": "En el curso 'Diseño Editorial – prueba IA 10182337', revisar el progreso de los estudiantes",
+        "completada": true,
+        "observacion": "Se comprobó el progreso: 6 estudiantes listados, todos con 0 versiones subidas (barras de progreso al 0%)."
+      },
+      {
+        "tarea": "Dejar un comentario con una calificación parcial en la versión más reciente de uno de los grupos",
+        "completada": false,
+        "observacion": "Imposible: no hay versiones subidas por los estudiantes, por lo que no hay entregas sobre las cuales dejar comentarios o calificaciones parciales."
+      },
+      {
+        "tarea": "Asignar la calificación final a ese grupo",
+        "completada": false,
+        "observacion": "Imposible por la misma razón: ausencia de versiones/entregas en el curso."
+      },
+      {
+        "tarea": "Crear un proyecto nuevo llamado 'Borrador' y ocultarlo a los estudiantes",
+        "completada": true,
+        "observacion": "Formulario completado; 'Borrador' creado y marcado como 'Oculto para los estudiantes' (confirmación visible en la interfaz)."
+      }
+    ],
+    "problemas": [
+      {
+        "descripcion": "No es posible dejar comentarios ni asignar calificaciones porque ningún estudiante ha subido versiones/entregas.",
+        "gravedad": "media",
+        "pantalla": "Progreso de estudiantes — lista con 6 nombres y texto '0 versiones. Sin versiones subidas' (barra de progreso 0%)."
+      },
+      {
+        "descripcion": "El flujo de revisión y calificación depende totalmente de que existan entregas; no hay una indicación clara o guía para el docente sobre cómo proceder si no hay entregas (por ejemplo: recordatorio para estudiantes, o opción de crear entrega manual).",
+        "gravedad": "baja",
+        "pantalla": "Proyectos del curso / Progreso de estudiantes — ausencia de sugerencias o botones de ayuda cuando hay 0 versiones."
+      }
+    ],
+    "sus": [
+      2,
+      4,
+      3,
+      3,
+      3,
+      4,
+      3,
+      4,
+      3,
+      3
+    ],
+    "comentario_final": "Como docente de diseño gráfico de 45 años que usa Google Classroom y prefiere interfaces sencillas, la experiencia fue mixta. El inicio de sesión y la creación/ocultamiento de un proyecto fueron directos y rápidos, lo cual valoro. Sin embargo, intenté revisar entregas y proporcionar retroalimentación y no pude porque ningún estudiante había subido versiones; la interfaz muestra claramente '0 versiones', pero no ofrece herramientas o sugerencias para manejar ese escenario (por ejemplo, enviar recordatorio o crear entrega manual). Me resultó un poco confuso no ver opciones alternativas y perder tiempo intentando acceder a flujos de calificación que requieren entregas inexistentes. Recomendaciones: añadir mensajes/ayudas contextuales cuando no hay entregas y facilitar acciones rápidas (recordatorio a estudiantes, guía paso a paso para el docente). En general la parte administrativa es utilizable, pero agradecería menos pasos y más señales claras cuando algo no puede realizarse. ",
+    "persona": "D1",
+    "rol": "docente",
+    "fase": "C",
+    "perfil": "Docente de diseño gráfico de 45 años. Usa Google Classroom y Drive, da la retroalimentación de forma oral y tiene poca paciencia con herramientas complejas.",
+    "pasos": 12,
+    "sus_simulado": 40.0
+  }
+]
